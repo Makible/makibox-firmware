@@ -402,12 +402,12 @@ unsigned char manage_monitor = 255;
 
     if (!card.init(SPI_FULL_SPEED,SDSS)){
         //if (!card.init(SPI_HALF_SPEED,SDSS))
-          showString(PSTR("SD init fail\r\n"));
+          showString(PSTR("-- SD init fail\r\n"));
     }
     else if (!volume.init(&card))
-          showString(PSTR("volume.init failed\r\n"));
+          showString(PSTR("-- volume.init failed\r\n"));
     else if (!root.openRoot(&volume)) 
-          showString(PSTR("openRoot failed\r\n"));
+          showString(PSTR("-- openRoot failed\r\n"));
     else{
           sdactive = true;
           print_disk_info();
@@ -451,7 +451,7 @@ unsigned char manage_monitor = 255;
     
     if(pstr == NULL)
     {
-      showString(PSTR("invalid command\r\n"));
+      showString(PSTR("-- invalid command\r\n"));
       return;
     }
     
@@ -460,24 +460,24 @@ unsigned char manage_monitor = 255;
     //check mode (currently only RAW is supported
     if(strcmp(strchr_pointer+4, "RAW") != 0)
     {
-      showString(PSTR("Invalid transfer codec\r\n"));
+      showString(PSTR("-- Invalid transfer codec\r\n"));
       return;
     }else{
-      showString(PSTR("Selected codec: "));
+      showString(PSTR("-- Selected codec: "));
       Serial.println(strchr_pointer+4);
     }
     
     if (!file.open(&root, pstr+1, O_CREAT | O_APPEND | O_WRITE | O_TRUNC))
     {
-      showString(PSTR("open failed, File: "));
+      showString(PSTR("-- open failed, File: "));
       Serial.print(pstr+1);
       showString(PSTR("."));
     }else{
-      showString(PSTR("Writing to file: "));
+      showString(PSTR("-- Writing to file: "));
       Serial.println(pstr+1);
+      showString(PSTR("ok\r\n"));
     }
         
-    showString(PSTR("ok\r\n"));
     
     //RAW transfer codec
     //Host sends \0 then up to SD_FAST_XFER_CHUNK_SIZE then \0
@@ -519,7 +519,7 @@ unsigned char manage_monitor = 255;
         file.write(fastxferbuffer);
         showString(PSTR("ok\r\n"));
       }else{
-        showString(PSTR("Wrote "));
+        showString(PSTR("-- Wrote "));
         Serial.print(xferbytes);
         showString(PSTR(" bytes.\r\n"));
         done = true;
@@ -536,7 +536,7 @@ unsigned char manage_monitor = 255;
  {
 
    // print the type of card
-    showString(PSTR("\nCard type: "));
+    showString(PSTR("-- Card type: "));
     switch(card.type()) 
     {
       case SD_CARD_TYPE_SD1:
@@ -556,7 +556,7 @@ unsigned char manage_monitor = 255;
     //uint64_t occupiedSpace = (card.cardSize()*512) - freeSpace;
     // print the type and size of the first FAT-type volume
     uint32_t volumesize;
-    showString(PSTR("\nVolume type is FAT"));
+    showString(PSTR("// Volume type is FAT"));
     Serial.println(volume.fatType(), DEC);
     
     volumesize = volume.blocksPerCluster(); // clusters are collections of blocks
@@ -564,7 +564,7 @@ unsigned char manage_monitor = 255;
     volumesize *= 512; // SD card blocks are always 512 bytes
     volumesize /= 1024; //kbytes
     volumesize /= 1024; //Mbytes
-    showString(PSTR("Volume size (Mbytes): "));
+    showString(PSTR("// Volume size (Mbytes): "));
     Serial.println(volumesize);
    
     // list all files in the card with date and size
@@ -598,7 +598,7 @@ unsigned char manage_monitor = 255;
       
       if (file.writeError)
       {
-          showString(PSTR("error writing to file\r\n"));
+          showString(PSTR("-- error writing to file\r\n"));
       }
   }
 
@@ -677,10 +677,10 @@ void setup()
 { 
   
   Serial.begin(BAUDRATE);
-  showString(PSTR("Makibox\r\n"));
+  showString(PSTR("// Makibox "));
   showString(PSTR(_VERSION_TEXT));
-  showString(PSTR("\r\n"));
-  showString(PSTR("start\r\n"));
+  showString(PSTR(" started.\r\n"));
+  //showString(PSTR("start\r\n"));
 
   for(int i = 0; i < BUFSIZE; i++)
   {
@@ -847,20 +847,20 @@ void setup()
     WRITE(SDPOWER,HIGH);
   #endif
   
-  showString(PSTR("SD Start\r\n"));
+  showString(PSTR("// SD Start\r\n"));
   initsd();
 
 #endif
 
   #if defined(PID_SOFT_PWM) || (defined(FAN_SOFT_PWM) && (FAN_PIN > -1))
-  showString(PSTR("Soft PWM Init\r\n"));
+  showString(PSTR("// Soft PWM Init\r\n"));
   init_Timer2_softpwm();
   #endif
   
-  showString(PSTR("Planner Init\r\n"));
+  showString(PSTR("// Planner Init\r\n"));
   plan_init();  // Initialize planner;
 
-  showString(PSTR("Stepper Timer init\r\n"));
+  showString(PSTR("// Stepper Timer init\r\n"));
   st_init();    // Initialize stepper
 
   #ifdef USE_EEPROM_SETTINGS
@@ -874,11 +874,11 @@ void setup()
   #endif
 
   //Free Ram
-  showString(PSTR("Free Ram: "));
+  showString(PSTR("// Free Ram: "));
   Serial.println(FreeRam1());
   
   //Planner Buffer Size
-  showString(PSTR("Plan Buffer Size:"));
+  showString(PSTR("// Plan Buffer Size:"));
   Serial.print((int)sizeof(block_t)*BLOCK_BUFFER_SIZE);
   showString(PSTR(" / "));
   Serial.println(BLOCK_BUFFER_SIZE);
@@ -915,7 +915,7 @@ void loop()
             file.sync();
             file.close();
             savetosd = false;
-            showString(PSTR("Done saving file.\r\n"));
+            showString(PSTR("// Done saving file.\r\n"));
         }
     }
     else
@@ -977,7 +977,7 @@ void get_command()
           gcode_N = (strtol(&cmdbuffer[bufindw][strchr_pointer - cmdbuffer[bufindw] + 1], NULL, 10));
           if(gcode_N != gcode_LastN+1 && (strstr(cmdbuffer[bufindw], "M110") == NULL) )
           {
-            showString(PSTR("Serial Error: Line Number is not Last Line Number+1, Last Line:"));
+            showString(PSTR("!! Serial Error: Line Number is not Last Line Number+1, Last Line:"));
             Serial.println(gcode_LastN);
             //Serial.println(gcode_N);
             FlushSerialRequestResend();
@@ -994,7 +994,7 @@ void get_command()
   
             if( (int)(strtod(&cmdbuffer[bufindw][strchr_pointer - cmdbuffer[bufindw] + 1], NULL)) != checksum)
             {
-              showString(PSTR("Error: checksum mismatch, Last Line:"));
+              showString(PSTR("!! checksum mismatch, Last Line:"));
               Serial.println(gcode_LastN);
               FlushSerialRequestResend();
               serial_count = 0;
@@ -1004,7 +1004,7 @@ void get_command()
           }
           else 
           {
-            showString(PSTR("Error: No Checksum with line number, Last Line:"));
+            showString(PSTR("!! No Checksum with line number, Last Line:"));
             Serial.println(gcode_LastN);
             FlushSerialRequestResend();
             serial_count = 0;
@@ -1018,7 +1018,7 @@ void get_command()
         {
           if((strstr(cmdbuffer[bufindw], "*") != NULL))
           {
-            showString(PSTR("Error: No Line Number with checksum, Last Line:"));
+            showString(PSTR("!! No Line Number with checksum, Last Line:"));
             Serial.println(gcode_LastN);
             serial_count = 0;
             return;
@@ -1041,7 +1041,6 @@ void get_command()
                 break;
               #endif
               showString(PSTR("ok\r\n"));
-              //Serial.println("ok"); 
             break;
             
             default:
@@ -1079,7 +1078,7 @@ void get_command()
         if(sdpos >= filesize)
         {
             sdmode = false;
-            showString(PSTR("Done printing file\r\n"));
+            showString(PSTR("// Done printing file\r\n"));
         }
        
         if(!serial_count) { //if empty line
@@ -1289,7 +1288,7 @@ FORCE_INLINE void process_commands()
         break;
       default:
             #ifdef SEND_WRONG_CMD_INFO
-              showString(PSTR("Unknown G-COM:"));
+              showString(PSTR("!! Unknown G-COM:"));
               Serial.println(cmdbuffer[bufindr]);
             #endif
       break;
@@ -1304,9 +1303,9 @@ FORCE_INLINE void process_commands()
 #ifdef SDSUPPORT
         
       case 20: // M20 - list SD card
-        showString(PSTR("Begin file list\r\n"));
+        showString(PSTR("// Begin file list\r\n"));
         root.ls();
-        showString(PSTR("End file list\r\n"));
+        showString(PSTR("// End file list\r\n"));
         break;
       case 21: // M21 - init SD card
         sdmode = false;
@@ -1328,17 +1327,17 @@ FORCE_INLINE void process_commands()
             
             if (file.open(&root, strchr_pointer + 4, O_READ)) 
             {
-                showString(PSTR("File opened:"));
+                showString(PSTR("// File opened:"));
                 Serial.print(strchr_pointer + 4);
-                showString(PSTR(" Size:"));
+                showString(PSTR("// Size:"));
                 Serial.println(file.fileSize());
                 sdpos = 0;
                 filesize = file.fileSize();
-                showString(PSTR("File selected\r\n"));
+                showString(PSTR("// File selected\r\n"));
             }
             else
             {
-                showString(PSTR("file.open failed\r\n"));
+                showString(PSTR("!! file.open failed\r\n"));
             }
         }
         break;
@@ -1364,14 +1363,14 @@ FORCE_INLINE void process_commands()
       case 27: //M27 - Get SD status
         if(sdactive)
         {
-            showString(PSTR("SD printing byte "));
+            showString(PSTR("// SD printing byte "));
             Serial.print(sdpos);
             showString(PSTR("/"));
             Serial.println(filesize);
         }
         else
         {
-            showString(PSTR("Not SD printing\r\n"));
+            showString(PSTR("// Not SD printing\r\n"));
         }
         break;
       case 28: //M28 - Start SD write
@@ -1390,14 +1389,14 @@ FORCE_INLINE void process_commands()
             
             if (!file.open(&root, strchr_pointer+4, O_CREAT | O_APPEND | O_WRITE | O_TRUNC))
             {
-              showString(PSTR("open failed, File: "));
+              showString(PSTR("!! open failed, File: "));
               Serial.print(strchr_pointer + 4);
               showString(PSTR("."));
             }
             else
             {
               savetosd = true;
-              showString(PSTR("Writing to file: "));
+              showString(PSTR("// Writing to file: "));
               Serial.println(strchr_pointer + 4);
             }
         }
@@ -1420,11 +1419,11 @@ FORCE_INLINE void process_commands()
             
             if(file.remove(&root, strchr_pointer + 4))
             {
-              showString(PSTR("File deleted\r\n"));
+              showString(PSTR("// File deleted\r\n"));
             }
             else
             {
-              showString(PSTR("Deletion failed\r\n"));
+              showString(PSTR("// Deletion failed\r\n"));
             }
         }
         break;  
@@ -1433,7 +1432,7 @@ FORCE_INLINE void process_commands()
         fast_xfer();
         break;
       case 31: //M31 - high speed xfer capabilities
-        showString(PSTR("RAW:"));
+        showString(PSTR("// RAW:"));
         Serial.println(SD_FAST_XFER_CHUNK_SIZE);
         break;
    #endif
@@ -1500,10 +1499,10 @@ FORCE_INLINE void process_commands()
           bedtempC = analog2tempBed(current_bed_raw);
         #endif
         #if (TEMP_0_PIN > -1) || defined (HEATER_USES_MAX6675) || defined HEATER_USES_AD595
-            showString(PSTR("ok T:"));
+            showString(PSTR("ok T"));
             Serial.print(hotendtC); 
           #ifdef PIDTEMP
-            showString(PSTR(" @:"));
+            showString(PSTR(" D"));
             Serial.print(heater_duty); 
             /*
             showString(PSTR(",P:"));
@@ -1514,12 +1513,12 @@ FORCE_INLINE void process_commands()
             Serial.print(dTerm);
             */
             #ifdef AUTOTEMP
-              showString(PSTR(",AU:"));
+              showString(PSTR(" A"));
               Serial.print(autotemp_setpoint);
             #endif
           #endif
           #if TEMP_1_PIN > -1 || defined BED_USES_AD595
-            showString(PSTR(" B:"));
+            showString(PSTR(" B"));
             Serial.println(bedtempC); 
           #else
             Serial.println();
@@ -1562,7 +1561,7 @@ FORCE_INLINE void process_commands()
       #endif
           if( (millis() - codenum) > 1000 ) //Print Temp Reading every 1 second while heating up/cooling down
           {
-            showString(PSTR("T:"));
+            showString(PSTR("T"));
             Serial.println( analog2temp(current_raw) );
             codenum = millis();
           }
@@ -1594,9 +1593,9 @@ FORCE_INLINE void process_commands()
           if( (millis()-codenum) > 1000 ) //Print Temp Reading every 1 second while heating up.
           {
             hotendtC=analog2temp(current_raw);
-            showString(PSTR("T:"));
+            showString(PSTR("T"));
             Serial.print( hotendtC );
-            showString(PSTR(" B:"));
+            showString(PSTR(" B"));
             Serial.println( analog2tempBed(current_bed_raw) ); 
             codenum = millis(); 
           }
@@ -1723,14 +1722,14 @@ FORCE_INLINE void process_commands()
 //        }
         break;
       case 93: // M93 show current axis steps.
-	showString(PSTR("ok "));
-	showString(PSTR("X:"));
+	showString(PSTR("ok"));
+	showString(PSTR(" X"));
         Serial.print(axis_steps_per_unit[0]);
-	showString(PSTR("Y:"));
+	showString(PSTR(" Y"));
         Serial.print(axis_steps_per_unit[1]);
-	showString(PSTR("Z:"));
+	showString(PSTR(" Z"));
         Serial.print(axis_steps_per_unit[2]);
-	showString(PSTR("E:"));
+	showString(PSTR(" E"));
         Serial.println(axis_steps_per_unit[3]);
         break;
       case 115: // M115
@@ -1740,17 +1739,18 @@ FORCE_INLINE void process_commands()
         showString(PSTR("\r\n"));
         break;
       case 114: // M114
-	showString(PSTR("X:"));
+    showString(PSTR("ok"));
+	showString(PSTR(" X"));
         Serial.print(current_position[0]);
-	showString(PSTR("Y:"));
+	showString(PSTR(" Y"));
         Serial.print(current_position[1]);
-	showString(PSTR("Z:"));
+	showString(PSTR(" Z"));
         Serial.print(current_position[2]);
-	showString(PSTR("E:"));
+	showString(PSTR(" E"));
         Serial.println(current_position[3]);
         break;
       case 119: // M119
-      
+        showString(PSTR("// ")); 
       	#if (X_MIN_PIN > -1)
           showString(PSTR("x_min:"));
           Serial.print((READ(X_MIN_PIN)^X_ENDSTOP_INVERT)?"H ":"L ");
@@ -1823,7 +1823,7 @@ FORCE_INLINE void process_commands()
       case 206: // M206 additional homing offset
         if(code_seen('D'))
         {
-          showString(PSTR("Addhome X:")); Serial.print(add_homing[0]);
+          showString(PSTR("// Addhome X:")); Serial.print(add_homing[0]);
           showString(PSTR(" Y:")); Serial.print(add_homing[1]);
           showString(PSTR(" Z:")); Serial.println(add_homing[2]);
         }
@@ -1915,7 +1915,7 @@ FORCE_INLINE void process_commands()
             tt_minval = analog2temp(current_raw_minval);
         #endif
         
-            showString(PSTR("Tmin:"));
+            showString(PSTR("// Tmin:"));
             Serial.print(tt_minval); 
             showString(PSTR(" / Tmax:"));
             Serial.print(tt_maxval); 
@@ -1925,16 +1925,16 @@ FORCE_INLINE void process_commands()
             current_raw_minval = 32000;
             current_raw_maxval = -32000;
         
-            showString(PSTR("T Minmax Reset "));
+            showString(PSTR("// T Minmax Reset "));
       break;
 #endif
       case 603: // M603  Free RAM
-            showString(PSTR("Free Ram: "));
+            showString(PSTR("// Free Ram: "));
             Serial.println(FreeRam1()); 
       break;
       default:
             #ifdef SEND_WRONG_CMD_INFO
-              showString(PSTR("Unknown M-COM:"));
+              showString(PSTR("!! Unknown M-COM:"));
               Serial.println(cmdbuffer[bufindr]);
             #endif
       break;
@@ -1943,7 +1943,7 @@ FORCE_INLINE void process_commands()
     
   }
   else{
-      showString(PSTR("Unknown command:\r\n"));
+      showString(PSTR("!! Unknown command:\r\n"));
       Serial.println(cmdbuffer[bufindr]);
   }
   
@@ -1957,7 +1957,7 @@ void FlushSerialRequestResend()
 {
   //char cmdbuffer[bufindr][100]="Resend:";
   Serial.flush();
-  showString(PSTR("Resend:"));
+  showString(PSTR("rs "));
   Serial.println(gcode_LastN + 1);
   ClearToSend();
 }
@@ -1970,7 +1970,6 @@ void ClearToSend()
     return;
   #endif
   showString(PSTR("ok\r\n"));
-  //Serial.println("ok");
 }
 
 FORCE_INLINE void get_coordinates()
