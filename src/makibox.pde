@@ -147,6 +147,7 @@
 
 #include <avr/pgmspace.h>
 #include <math.h>
+#include <util/crc16.h>
 
 #include "fastio.h"
 #include "Configuration.h"
@@ -306,7 +307,6 @@ bool home_all_axis = true;
 //unsigned ?? ToDo: Check
 int feedrate = 1500, next_feedrate, saved_feedrate;
 
-long gcode_N, gcode_LastN;
 bool relative_mode = false;  //Determines Absolute or Relative Coordinates
 
 //unsigned long steps_taken[NUM_AXIS];
@@ -346,9 +346,10 @@ float offset[3] = {0.0, 0.0, 0.0};
 
 // comm variables and Commandbuffer
 // BUFSIZE is reduced from 8 to 6 to free more RAM for the PLANNER
-#define MAX_CMD_SIZE 96
-#define BUFSIZE 6 //8
-char cmdbuffer[BUFSIZE][MAX_CMD_SIZE];
+// MAX_CMD_SIZE does not include the trailing \0 that terminates the string.
+#define MAX_CMD_SIZE 95
+#define BUFSIZE 6
+char cmdbuf[BUFSIZE][MAX_CMD_SIZE+1];
 bool fromsd[BUFSIZE];
 
 //Need 1kb Ram --> only work with Atmega1284
@@ -361,9 +362,9 @@ bool fromsd[BUFSIZE];
 unsigned char bufindr = 0;
 unsigned char bufindw = 0;
 unsigned char buflen = 0;
-char serial_char;
-int serial_count = 0;
-boolean comment_mode = false;
+unsigned char bufpos = 0;
+long cmdseqnbr;
+char *curcmd;
 char *strchr_pointer; // just a pointer to find chars in the cmd string like X, Y, Z, E, etc
 
 //Send Temperature in °C to Host
@@ -682,6 +683,7 @@ void setup()
   showString(PSTR(" started.\r\n"));
   //showString(PSTR("start\r\n"));
 
+  cmdseqnbr = 0;
   for(int i = 0; i < BUFSIZE; i++)
   {
       fromsd[i] = false;
@@ -897,11 +899,21 @@ void setup()
 //------------------------------------------------
 void loop()
 {
-  if(buflen < (BUFSIZE-1))
-    get_command();
-  
-  if(buflen)
-  {
+  // First, empty the UART buffer.
+  cmdbuf_read_serial();
+
+  // If we have any commands, process the first one.
+  cmdbuf_process();
+
+  // Manage the heater and fan.
+  manage_heater();
+  manage_inactivity(1);
+  #if (MINIMUM_FAN_START_SPEED > 0)
+    manage_fan_start_speed();
+  #endif
+}
+
+/*
 #ifdef SDSUPPORT
     if(savetosd)
     {
@@ -925,22 +937,7 @@ void loop()
 #else
     process_commands();
 #endif
-
-    buflen = (buflen-1);
-    //bufindr = (bufindr + 1)%BUFSIZE;
-    //Removed modulo (%) operator, which uses an expensive divide and multiplication
-    bufindr++;
-    if(bufindr == BUFSIZE) bufindr = 0;
-  }
-  
-  //check heater every n milliseconds
-  manage_heater();
-  manage_inactivity(1);
-  #if (MINIMUM_FAN_START_SPEED > 0)
-    manage_fan_start_speed();
-  #endif
-  
-}
+*/
 
 //------------------------------------------------
 //Check Uart buffer while arc function ist calc a circle
@@ -948,165 +945,139 @@ void loop()
 
 void check_buffer_while_arc()
 {
-  if(buflen < (BUFSIZE-1))
+  cmd_read_serial();
+}
+
+//------------------------------------------------
+//FILL COMMAND BUFFER FROM UART
+//
+//  This function reads characters from the UART and
+//  places them in the command buffer.  Commands are
+//  split on newline (either \r or \n), but no other
+//  parsing is done.
+//
+//  If a command exceeds MAX_CMD_SIZE, it is silently
+//  truncated.
+//
+//  The position in the current command buffer slot
+//  is tracked in the 'bufpos' global.
+//------------------------------------------------
+void cmdbuf_read_serial() 
+{ 
+  while (Serial.available() > 0)
   {
-    get_command();
+    char ch;
+    if (buflen >= BUFSIZE)
+    {
+        break;
+    }
+    if (bufpos >= MAX_CMD_SIZE)
+    {
+        // TODO:  can we do something more intelligent than
+        // just silently truncating the command?
+        bufpos = MAX_CMD_SIZE - 1;
+    }
+    ch = Serial.read();
+    cmdbuf[bufindw][bufpos] = ch;
+    bufpos++;
+    if (ch == '\n' || ch == '\r')
+    {
+      // Newline marks end of this command;  terminate
+      // string and move to the next buffer slot.
+      cmdbuf[bufindw][bufpos] = '\0';
+      bufindw++;
+      buflen++;
+      bufpos = 0;
+      if (bufindw == BUFSIZE)
+      {
+        bufindw = 0;
+      }
+    }
   }
 }
 
 //------------------------------------------------
-//READ COMMAND FROM UART
+//PROCESS COMMAND
+//
+//  This function is responsible for validating the
+//  command checksum, ensuring that the sequence
+//  number is correct, and dispatching the command.
+//
+//  If validation failes, an "rs <seqnbr>" response
+//  is sent;  after command dispatch, an "ok" or
+//  "!!" response is sent.
+//
+//  TODO:  reject (rather than ignore) parameters
+//  which are not valid for a particular command.
+//
+//  TODO:  once there is a validation error (resp
+//  "!!") refuse to accept additional commands until
+//  a reset.
 //------------------------------------------------
-void get_command() 
+void cmdbuf_process() 
 { 
-  while( Serial.available() > 0 && buflen < BUFSIZE)
-  {
-    serial_char = Serial.read();
-    if(serial_char == '\n' || serial_char == '\r' || (serial_char == ':' && comment_mode == false) || serial_count >= (MAX_CMD_SIZE - 1) ) 
-    {
-      if(!serial_count) { //if empty line
-        comment_mode = false; // for new command
-        return;
-      }
-      cmdbuffer[bufindw][serial_count] = 0; //terminate string
-
-        fromsd[bufindw] = false;
-        if(strstr(cmdbuffer[bufindw], "N") != NULL)
-        {
-          strchr_pointer = strchr(cmdbuffer[bufindw], 'N');
-          gcode_N = (strtol(&cmdbuffer[bufindw][strchr_pointer - cmdbuffer[bufindw] + 1], NULL, 10));
-          if(gcode_N != gcode_LastN+1 && (strstr(cmdbuffer[bufindw], "M110") == NULL) )
-          {
-            showString(PSTR("!! Serial Error: Line Number is not Last Line Number+1, Last Line:"));
-            Serial.println(gcode_LastN);
-            //Serial.println(gcode_N);
-            FlushSerialRequestResend();
-            serial_count = 0;
-            return;
-          }
-    
-          if(strstr(cmdbuffer[bufindw], "*") != NULL)
-          {
-            byte checksum = 0;
-            byte count = 0;
-            while(cmdbuffer[bufindw][count] != '*') checksum = checksum^cmdbuffer[bufindw][count++];
-            strchr_pointer = strchr(cmdbuffer[bufindw], '*');
-  
-            if( (int)(strtod(&cmdbuffer[bufindw][strchr_pointer - cmdbuffer[bufindw] + 1], NULL)) != checksum)
-            {
-              showString(PSTR("!! checksum mismatch, Last Line:"));
-              Serial.println(gcode_LastN);
-              FlushSerialRequestResend();
-              serial_count = 0;
-              return;
-            }
-            //if no errors, continue parsing
-          }
-          else 
-          {
-            showString(PSTR("!! No Checksum with line number, Last Line:"));
-            Serial.println(gcode_LastN);
-            FlushSerialRequestResend();
-            serial_count = 0;
-            return;
-          }
-    
-          gcode_LastN = gcode_N;
-          //if no errors, continue parsing
-        }
-        else  // if we don't receive 'N' but still see '*'
-        {
-          if((strstr(cmdbuffer[bufindw], "*") != NULL))
-          {
-            showString(PSTR("!! No Line Number with checksum, Last Line:"));
-            Serial.println(gcode_LastN);
-            serial_count = 0;
-            return;
-          }
-        }
-        
-	if((strstr(cmdbuffer[bufindw], "G") != NULL))
-        {
-          strchr_pointer = strchr(cmdbuffer[bufindw], 'G');
-          switch((int)((strtod(&cmdbuffer[bufindw][strchr_pointer - cmdbuffer[bufindw] + 1], NULL))))
-          {
-            case 0:
-            case 1:
-            #ifdef USE_ARC_FUNCTION
-            case 2:  //G2
-            case 3:  //G3 arc func
-            #endif
-              #ifdef SDSUPPORT
-              if(savetosd)
-                break;
-              #endif
-              showString(PSTR("ok\r\n"));
-            break;
-            
-            default:
-            break;
-          }
-        }
-        //Removed modulo (%) operator, which uses an expensive divide and multiplication
-        //bufindw = (bufindw + 1)%BUFSIZE;
-        bufindw++;
-        if(bufindw == BUFSIZE) bufindw = 0;
-        buflen += 1;
-
-      comment_mode = false; //for new command
-      serial_count = 0; //clear buffer
-    }
-    else
-    {
-      if(serial_char == ';') comment_mode = true;
-      if(!comment_mode) cmdbuffer[bufindw][serial_count++] = serial_char;
-    }
-  }
-#ifdef SDSUPPORT
-  if(!sdmode || serial_count!=0)
+  if (buflen < 1)
   {
     return;
   }
-  while( filesize > sdpos && buflen < BUFSIZE)
+  
+  curcmd = cmdbuf[bufindr];
+  buflen--;
+  bufindr++;
+  if (bufindr == BUFSIZE)
   {
-    serial_char = file.read();
-    read_char_int = (int)serial_char;
-    
-    if(serial_char == '\n' || serial_char == '\r' || (serial_char == ':' && comment_mode == false) || serial_count >= (MAX_CMD_SIZE - 1) || read_char_int == -1) 
-    {
-        sdpos = file.curPosition();
-        if(sdpos >= filesize)
-        {
-            sdmode = false;
-            showString(PSTR("// Done printing file\r\n"));
-        }
-       
-        if(!serial_count) { //if empty line
-          comment_mode = false; // for new command
-          return;
-        }
-        
-        cmdbuffer[bufindw][serial_count] = 0; //terminate string
-
-          fromsd[bufindw] = true;
-          buflen += 1;
-          //Removed modulo (%) operator, which uses an expensive divide and multiplication	
-          //bufindw = (bufindw + 1)%BUFSIZE;
-          bufindw++;
-          if(bufindw == BUFSIZE) bufindw = 0;
-
-        comment_mode = false; //for new command
-        serial_count = 0; //clear buffer
-    }
-    else
-    {
-      if(serial_char == ';') comment_mode = true;
-      if(!comment_mode) cmdbuffer[bufindw][serial_count++] = serial_char;
-    }
+    bufindr = 0;
   }
-#endif
 
+  if (!strchr(curcmd, 'N'))
+  {
+    showString(PSTR("!! Invalid command - no line number."));
+    return;
+  }
+  if (!strchr(curcmd, '*'))
+  {
+    showString(PSTR("!! Invalid command - no checksum."));
+    return;
+  }
+
+  // Validate the command's checksum.
+  uint16_t checksum;
+  int i = 0;
+  while (curcmd[i] != '*')
+  {
+    _crc_xmodem_update(checksum, curcmd[i++]);
+  }
+  if (checksum != strtoul(strchr(curcmd, '*'), NULL, 16))
+  {
+    showString(PSTR("!! Invalid command - bad checksum."));
+    return;
+  }
+
+  // Validate the command's sequence number.
+  long seqnbr = strtol(strchr(curcmd, 'N') + 1, NULL, 10);
+  if (seqnbr > 0 && seqnbr != cmdseqnbr + 1)
+  {
+    showString(PSTR("rs "));
+    Serial.println(seqnbr)
+    showString(PSTR("\r\n"));
+    return;
+  }
+  cmdseqnbr++;
+
+  // Dispatch command.
+  execute_command();
+
+  // Success!
+  previous_millis_cmd = millis();
+  #ifdef SDSUPPORT
+  if(fromsd[bufindr])
+    return;
+  #endif
+  showString(PSTR("ok "));
+  Serial.println(cmdseqnbr);
+  showString(PSTR("\r\n"));
 }
+
 
 static bool check_endstops = true;
 
@@ -1115,13 +1086,13 @@ void enable_endstops(bool check)
   check_endstops = check;
 }
 
-FORCE_INLINE float code_value() { return (strtod(&cmdbuffer[bufindr][strchr_pointer - cmdbuffer[bufindr] + 1], NULL)); }
-FORCE_INLINE long code_value_long() { return (strtol(&cmdbuffer[bufindr][strchr_pointer - cmdbuffer[bufindr] + 1], NULL, 10)); }
-FORCE_INLINE bool code_seen(char code_string[]) { return (strstr(cmdbuffer[bufindr], code_string) != NULL); }  //Return True if the string was found
+FORCE_INLINE float code_value() { return (strtod(strchr_pointer + 1, NULL)); }
+FORCE_INLINE long code_value_long() { return (strtol(strchr_pointer + 1, NULL, 10)); }
+FORCE_INLINE bool code_seen(char code_string[]) { return (strstr(curcmd, code_string) != NULL); }  //Return True if the string was found
 
 FORCE_INLINE bool code_seen(char code)
 {
-  strchr_pointer = strchr(cmdbuffer[bufindr], code);
+  strchr_pointer = strchr(curcmd, code);
   return (strchr_pointer != NULL);  //Return True if a character was found
 }
 
@@ -1189,14 +1160,37 @@ FORCE_INLINE void homing_routine(char axis)
 //------------------------------------------------
 // CHECK COMMAND AND CONVERT VALUES
 //------------------------------------------------
-FORCE_INLINE void process_commands()
+void execute_command()
 {
   unsigned long codenum; //throw away variable
   char *starpos = NULL;
+  int code_G = -1;
+  int code_M = -1;
 
-  if(code_seen('G'))
+  if (code_seen('G'))
   {
-    switch((int)code_value())
+    code_G = (int)code_value();
+  }
+  if (code_seen('M'))
+  {
+    code_M = (int)code_value();
+  }
+
+  if (code_G < 0 && code_M < 0)
+  {
+    showString(PSTR("-- Unknown command.\r\n"));
+    return;
+  }
+
+  if (code_G >= 0 && code_M >= 0)
+  {
+    showString(PSTR("-- Error, both G and M codes given.\r\n"));
+    return;
+  }
+
+  if (code_G >= 0)
+  {
+    switch(code_G)
     {
       case 0: // G0 -> G1
       case 1: // G1
@@ -1206,7 +1200,6 @@ FORCE_INLINE void process_commands()
         get_coordinates(); // For X Y Z E F
         prepare_move();
         previous_millis_cmd = millis();
-        //ClearToSend();
         return;
         //break;
       #ifdef USE_ARC_FUNCTION
@@ -1287,10 +1280,11 @@ FORCE_INLINE void process_commands()
         plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
         break;
       default:
-            #ifdef SEND_WRONG_CMD_INFO
-              showString(PSTR("!! Unknown G-COM:"));
-              Serial.println(cmdbuffer[bufindr]);
-            #endif
+        #ifdef SEND_WRONG_CMD_INFO
+        showString(PSTR("-- Unknown code G"));
+        Serial.println(code_G);
+        showString(PSTR(".\r\n"));
+        #endif
       break;
     }
   }
@@ -1382,7 +1376,7 @@ FORCE_INLINE void process_commands()
             starpos = (strchr(strchr_pointer + 4,'*'));
             if(starpos != NULL)
             {
-              npos = strchr(cmdbuffer[bufindr], 'N');
+              npos = strchr(cmdbuf[bufindr], 'N');
               strchr_pointer = strchr(npos,' ') + 1;
               *(starpos-1) = '\0';
             }
@@ -1934,43 +1928,17 @@ FORCE_INLINE void process_commands()
       break;
       default:
             #ifdef SEND_WRONG_CMD_INFO
-              showString(PSTR("!! Unknown M-COM:"));
-              Serial.println(cmdbuffer[bufindr]);
+            showString(PSTR("-- Unknown code M"));
+            Serial.println(code_M);
+            showString(PSTR(".\r\n"));
             #endif
       break;
 
     }
     
   }
-  else{
-      showString(PSTR("!! Unknown command:\r\n"));
-      Serial.println(cmdbuffer[bufindr]);
-  }
-  
-  ClearToSend();
-      
 }
 
-
-
-void FlushSerialRequestResend()
-{
-  //char cmdbuffer[bufindr][100]="Resend:";
-  Serial.flush();
-  showString(PSTR("rs "));
-  Serial.println(gcode_LastN + 1);
-  ClearToSend();
-}
-
-void ClearToSend()
-{
-  previous_millis_cmd = millis();
-  #ifdef SDSUPPORT
-  if(fromsd[bufindr])
-    return;
-  #endif
-  showString(PSTR("ok\r\n"));
-}
 
 FORCE_INLINE void get_coordinates()
 {
