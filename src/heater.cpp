@@ -26,7 +26,7 @@
 #include "heater.h"
 #include "fastio.h"
 #include "pins.h"
-#include "Sprinter.h"
+#include "makibox.h"
 
 #ifdef CONTROLLERFAN_PIN
   void controllerFan(void);

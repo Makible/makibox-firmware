@@ -1,5 +1,5 @@
 /*
- EEPROM routines to save Sprinter Settings 
+ EEPROM routines to save settings 
  
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 #include <avr/pgmspace.h>
 #include <inttypes.h>
 
-#include "Sprinter.h"
+#include "makibox.h"
 #include "store_eeprom.h"
 #include "Configuration.h"
 

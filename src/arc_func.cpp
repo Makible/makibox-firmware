@@ -23,7 +23,7 @@
 #include <math.h>
 
 #include "Configuration.h"
-#include "Sprinter.h"
+#include "makibox.h"
 
 #ifdef USE_ARC_FUNCTION
 // The arc is approximated by generating a huge number of tiny, linear segments. The length of each 

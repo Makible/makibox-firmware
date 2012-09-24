@@ -1,4 +1,4 @@
-# Sprinter Arduino Project Makefile
+# makibox-firmware Arduino Project Makefile
 # 
 # Makefile Based on:
 # Arduino 0011 Makefile

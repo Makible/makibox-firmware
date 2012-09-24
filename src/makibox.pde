@@ -151,7 +151,7 @@
 #include "fastio.h"
 #include "Configuration.h"
 #include "pins.h"
-#include "Sprinter.h"
+#include "makibox.h"
 #include "speed_lookuptable.h"
 #include "heater.h"
 
@@ -677,7 +677,7 @@ void setup()
 { 
   
   Serial.begin(BAUDRATE);
-  showString(PSTR("Sprinter\r\n"));
+  showString(PSTR("Makibox\r\n"));
   showString(PSTR(_VERSION_TEXT));
   showString(PSTR("\r\n"));
   showString(PSTR("start\r\n"));
@@ -1734,7 +1734,7 @@ FORCE_INLINE void process_commands()
         Serial.println(axis_steps_per_unit[3]);
         break;
       case 115: // M115
-        showString(PSTR("FIRMWARE_NAME: Sprinter Experimental PROTOCOL_VERSION:1.0 MACHINE_TYPE:Mendel EXTRUDER_COUNT:1\r\n"));
+        showString(PSTR("FIRMWARE_NAME: Makibox PROTOCOL_VERSION:1.0 MACHINE_TYPE:Mendel EXTRUDER_COUNT:1\r\n"));
         //Serial.println(uuid);
         showString(PSTR(_DEF_CHAR_UUID));
         showString(PSTR("\r\n"));
