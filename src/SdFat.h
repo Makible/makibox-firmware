@@ -23,7 +23,7 @@
  * \file
  * SdFile and SdVolume classes
  */
-#include <avr/pgmspace.h>
+#include "fixed_pgmspace.h"
 #include "Sd2Card.h"
 #include "FatStructs.h"
 #include "Print.h"

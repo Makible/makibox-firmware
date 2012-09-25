@@ -16,7 +16,7 @@
 */
 
 #include <avr/eeprom.h>
-#include <avr/pgmspace.h>
+#include "fixed_pgmspace.h"
 #include <inttypes.h>
 
 #include "makibox.h"

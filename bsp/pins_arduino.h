@@ -1,7 +1,7 @@
 #ifndef pins_macros_for_arduino_compatibility_h
 #define pins_macros_for_arduino_compatibility_h
 
-#include <avr/pgmspace.h>
+#include "fixed_pgmspace.h"
 #include "core_pins.h"
 
 #if defined(__AVR_ATmega32U4__) || defined(__AVR_AT90USB646__) || defined(__AVR_AT90USB1286__)

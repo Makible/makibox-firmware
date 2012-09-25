@@ -18,7 +18,7 @@
  * <http://www.gnu.org/licenses/>.
  */
 #include "SdFat.h"
-#include <avr/pgmspace.h>
+#include "fixed_pgmspace.h"
 #if defined(ARDUINO) && ARDUINO >= 100
 #include <Arduino.h>
 #else

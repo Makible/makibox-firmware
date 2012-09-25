@@ -21,7 +21,7 @@
 */
 
 
-#include <avr/pgmspace.h>
+#include "fixed_pgmspace.h"
 
 #include "heater.h"
 #include "fastio.h"
