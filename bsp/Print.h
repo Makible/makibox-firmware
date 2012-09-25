@@ -22,7 +22,6 @@
 
 #include <inttypes.h>
 #include <stdio.h> // for size_t
-#include "core_id.h"
 #include "WString.h"
 #include "Printable.h"
 
