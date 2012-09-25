@@ -19,7 +19,7 @@
 #include "wiring.h"
 
 #ifdef __cplusplus
-#include "usb_api.h"
+#include "usb_serial/usb_api.h"
 #include "WCharacter.h"
 #include "WString.h"
 #include "HardwareSerial.h"
