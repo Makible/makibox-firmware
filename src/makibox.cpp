@@ -173,8 +173,6 @@
 #define CRITICAL_SECTION_END    SREG = _sreg
 #endif //CRITICAL_SECTION_START
 
-void __cxa_pure_virtual(){};
-
 // look here for descriptions of gcodes: http://linuxcnc.org/handbook/gcode/g-code.html
 // http://objects.reprap.org/wiki/Mendel_User_Manual:_RepRapGCodes
 
