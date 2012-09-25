@@ -145,7 +145,7 @@
 
 */
 
-#include <avr/pgmspace.h>
+#include "fixed_pgmspace.h"
 #include <math.h>
 #include <util/crc16.h>
 
@@ -945,7 +945,7 @@ void loop()
 
 void check_buffer_while_arc()
 {
-  cmd_read_serial();
+  cmdbuf_read_serial();
 }
 
 //------------------------------------------------
@@ -1058,7 +1058,7 @@ void cmdbuf_process()
   if (seqnbr > 0 && seqnbr != cmdseqnbr + 1)
   {
     showString(PSTR("rs "));
-    Serial.println(seqnbr)
+    Serial.println(seqnbr);
     showString(PSTR("\r\n"));
     return;
   }
