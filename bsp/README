@@ -1,0 +1,6 @@
+Makibox board support package
+=============================
+
+Based on the Teensyduino core from PJRC.  Part of the code is licensed under the
+GPL, and the remainder is plain BSD;  as a result, the entirety of this BSP needs
+to be treated as GPL.
