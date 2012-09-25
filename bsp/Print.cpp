@@ -83,36 +83,6 @@ void Print::print(const String &s)
 
 
 #if ARDUINO >= 100
-size_t Print::print(const __FlashStringHelper *ifsh)
-{
-	uint8_t buffer[32];
-	size_t count = 0;
-	const char PROGMEM *p = (const char PROGMEM *)ifsh;
-	unsigned int len = strlen_P(p);
-	while (len > 0) {
-		unsigned int nbytes = len;
-		if (nbytes > sizeof(buffer)) nbytes = sizeof(buffer);
-		memcpy_P(buffer, p, nbytes);
-		p += nbytes;
-		len -= nbytes;
-		count += write(buffer, nbytes);
-	}
-	return count;
-}
-#else
-void Print::print(const __FlashStringHelper *ifsh)
-{
-	const char PROGMEM *p = (const char PROGMEM *)ifsh;
-	while (1) {
-		unsigned char c = pgm_read_byte(p++);
-		if (c == 0) return;
-		write(c);
-	}
-}
-#endif
-
-
-#if ARDUINO >= 100
 size_t Print::print(long n)
 {
 	uint8_t sign=0;

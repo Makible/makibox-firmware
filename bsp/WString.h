@@ -35,12 +35,6 @@
 //     -felide-constructors
 //     -std=c++0x
 
-// Brian Cook's "no overhead" Flash String type (message on Dec 14, 2010)
-// modified by Mikal Hart for his FlashString library
-class __FlashStringHelper;
-#ifndef F
-#define F(string_literal) (reinterpret_cast<__FlashStringHelper *>(PSTR(string_literal)))
-#endif
 
 // An inherited class for holding the result of a concatenation.  These
 // result objects are assumed to be writable by subsequent concatenations.
@@ -52,7 +46,6 @@ class String
 public:
 	// constructors
 	String(const char *cstr = NULL);
-	String(const __FlashStringHelper *pgmstr);
 	String(const String &str);
 	#ifdef __GXX_EXPERIMENTAL_CXX0X__
 	String(String &&rval);
@@ -72,11 +65,9 @@ public:
 
 	// copy and move
 	String & copy(const char *cstr, unsigned int length);
-	String & copy(const __FlashStringHelper *pgmstr);
 	void move(String &rhs);
 	String & operator = (const String &rhs);
 	String & operator = (const char *cstr);
-	String & operator = (const __FlashStringHelper *pgmstr);
 	#ifdef __GXX_EXPERIMENTAL_CXX0X__
 	String & operator = (String &&rval);
 	String & operator = (StringSumHelper &&rval);
@@ -86,7 +77,6 @@ public:
 	// append
 	String & append(const String &str);
 	String & append(const char *cstr);
-	String & append(const __FlashStringHelper *pgmstr);
 	String & append(char c);
 	String & append(unsigned char c)		{return append((char)c);}
 	String & append(int num);
@@ -95,7 +85,6 @@ public:
 	String & append(unsigned long num);
 	String & operator += (const String &rhs)	{return append(rhs);}
 	String & operator += (const char *cstr)		{return append(cstr);}
-	String & operator += (const __FlashStringHelper *pgmstr) {return append(pgmstr);}
 	String & operator += (char c)			{return append(c);}
 	String & operator += (unsigned char c)		{return append((char)c);}
 	String & operator += (int num)			{return append(num);}
@@ -106,7 +95,6 @@ public:
 	// concatenate
 	friend StringSumHelper & operator + (const StringSumHelper &lhs, const String &rhs);
 	friend StringSumHelper & operator + (const StringSumHelper &lhs, const char *cstr);
-	friend StringSumHelper & operator + (const StringSumHelper &lhs, const __FlashStringHelper *pgmstr);
 	friend StringSumHelper & operator + (const StringSumHelper &lhs, char c);
 	friend StringSumHelper & operator + (const StringSumHelper &lhs, unsigned char c);
 	friend StringSumHelper & operator + (const StringSumHelper &lhs, int num);
@@ -115,7 +103,6 @@ public:
 	friend StringSumHelper & operator + (const StringSumHelper &lhs, unsigned long num);
 	String & concat(const String &str)		{return append(str);}
 	String & concat(const char *cstr)		{return append(cstr);}
-	String & concat(const __FlashStringHelper *pgmstr) {return append(pgmstr);}
 	String & concat(char c)				{return append(c);}
 	String & concat(unsigned char c)		{return append((char)c);}
 	String & concat(int num)			{return append(num);}
@@ -127,13 +114,10 @@ public:
 	int compareTo(const String &s) const;
 	unsigned char equals(const String &s) const;
 	unsigned char equals(const char *cstr) const;
-	unsigned char equals(const __FlashStringHelper *pgmstr) const;
 	unsigned char operator == (const String &rhs) const {return equals(rhs);}
 	unsigned char operator == (const char *cstr) const {return equals(cstr);}
-	unsigned char operator == (const __FlashStringHelper *pgmstr) const {return equals(pgmstr);}
 	unsigned char operator != (const String &rhs) const {return !equals(rhs);}
 	unsigned char operator != (const char *cstr) const {return !equals(cstr);}
-	unsigned char operator != (const __FlashStringHelper *pgmstr) const {return !equals(pgmstr);}
 	unsigned char operator <  (const String &rhs) const;
 	unsigned char operator >  (const String &rhs) const;
 	unsigned char operator <= (const String &rhs) const;
@@ -190,7 +174,6 @@ class StringSumHelper : public String
 public:
 	StringSumHelper(const String &s) : String(s) {}
 	StringSumHelper(const char *p) : String(p) {}
-	StringSumHelper(const __FlashStringHelper *pgmstr) : String(pgmstr) {}
 	StringSumHelper(char c) : String(c) {}
 	StringSumHelper(unsigned char c) : String(c) {}
 	StringSumHelper(int num) : String(num, 10) {}

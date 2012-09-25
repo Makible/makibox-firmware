@@ -31,8 +31,6 @@
 #define BIN 2
 #define BYTE 0
 
-class __FlashStringHelper;
-
 #if ARDUINO >= 100
 class Print
 {
@@ -44,7 +42,6 @@ class Print
 	size_t print(const String &s);
 	size_t print(char c)				{ return write((uint8_t)c); }
 	size_t print(const char s[])			{ return write(s); }
-	size_t print(const __FlashStringHelper *f);
 
 	size_t print(uint8_t b)				{ return printNumber(b, 10, 0); }
 	size_t print(int n)				{ return print((long)n); }
@@ -64,7 +61,6 @@ class Print
 	size_t println(const String &s)			{ return print(s) + println(); }
 	size_t println(char c)				{ return print(c) + println(); }
 	size_t println(const char s[])			{ return print(s) + println(); }
-	size_t println(const __FlashStringHelper *f)	{ return print(f) + println(); }
 
 	size_t println(uint8_t b)			{ return print(b) + println(); }
 	size_t println(int n)				{ return print(n) + println(); }
@@ -100,7 +96,6 @@ class Print
 	void print(const String &s);
 	void print(char c)				{ write((uint8_t)c); }
 	void print(const char s[])			{ write(s); }
-	void print(const __FlashStringHelper *f);
 
 	void print(uint8_t b)				{ write(b); }
 	void print(int n)				{ print((long)n); }
@@ -119,7 +114,6 @@ class Print
 	void println(const String &s)			{ print(s); println(); }
 	void println(char c)				{ print(c); println(); }
 	void println(const char s[])			{ print(s); println(); }
-	void println(const __FlashStringHelper *f)	{ print(f); println(); }
 	void println(uint8_t b)				{ print(b); println(); }
 	void println(int n)				{ print(n); println(); }
 	void println(unsigned int n)			{ print(n); println(); }
