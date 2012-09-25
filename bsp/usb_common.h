@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include <avr/io.h>
-#include <avr/pgmspace.h>
+#include "fixed_pgmspace.h"
 #include <avr/interrupt.h>
 
 #ifdef __cplusplus
