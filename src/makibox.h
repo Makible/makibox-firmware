@@ -88,19 +88,18 @@ typedef struct {
 } block_t;
 
 
-void FlushSerialRequestResend();
-void ClearToSend();
-
 void analogWrite_check(uint8_t check_pin, int val);
 void showString (PGM_P s);
 
 void manage_inactivity(byte debug);
 
-void get_command();
+void cmdbuf_read_serial();
+void cmdbuf_process();
+void execute_command();
+
 void get_coordinates();
 void prepare_move();
 void prepare_arc_move(char isclockwise);
-FORCE_INLINE void process_commands();
 #ifdef USE_ARC_FUNCTION
   FORCE_INLINE void get_arc_coordinates();
 #endif
