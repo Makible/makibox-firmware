@@ -119,7 +119,7 @@ const bool DISABLE_E = false;
 //-----------------------------------------------------------------------
 const bool INVERT_X_DIR = false;
 const bool INVERT_Y_DIR = false;
-const bool INVERT_Z_DIR = true;
+const bool INVERT_Z_DIR = false;
 const bool INVERT_E_DIR = false;
 
 //-----------------------------------------------------------------------
@@ -139,15 +139,15 @@ const bool max_software_endstops = true; //If true, axis won't move to coordinat
 //-----------------------------------------------------------------------
 //Max Length for Prusa Mendel, check the ways of your axis and set this Values
 //-----------------------------------------------------------------------
-const int X_MAX_LENGTH = 200;
-const int Y_MAX_LENGTH = 200;
+const int X_MAX_LENGTH = 115;
+const int Y_MAX_LENGTH = 165;
 const int Z_MAX_LENGTH = 100;
 
 //-----------------------------------------------------------------------
 //// MOVEMENT SETTINGS
 //-----------------------------------------------------------------------
 const int NUM_AXIS = 4; // The axis order in all axis related arrays is X, Y, Z, E
-#define _MAX_FEEDRATE {400, 400, 2, 45}       // (mm/sec)    
+#define _MAX_FEEDRATE {800, 400, 2, 45}       // (mm/sec)    
 #define _HOMING_FEEDRATE {1500,1500,120}      // (mm/min) !!
 #define _AXIS_RELATIVE_MODES {false, false, false, false}
 
@@ -270,7 +270,7 @@ const int dropsegments=5; //everything with less than this number of steps will 
 //The result of this function is only send with the Temperaturerequest to the host
 //#define AUTOTEMP 
 #ifdef AUTOTEMP
-    #define AUTO_TEMP_MAX 240
+    #define AUTO_TEMP_MAX 350
     #define AUTO_TEMP_MIN 205
     #define AUTO_TEMP_FACTOR 0.025
     #define AUTOTEMP_OLDWEIGHT 0.98
@@ -348,7 +348,7 @@ const int dropsegments=5; //everything with less than this number of steps will 
 // When temperature exceeds max temp, your heater will be switched off.
 // This feature exists to protect your hotend from overheating accidentally, but *NOT* from thermistor short/failure!
 // You should use MINTEMP for thermistor short/failure protection.
-#define MAXTEMP 275
+#define MAXTEMP 350
 
 // Select one of these only to define how the nozzle temp is read.
 #define HEATER_USES_THERMISTOR
