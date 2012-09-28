@@ -1,0 +1,3 @@
+*.o
+makibox.elf
+makibox.hex
