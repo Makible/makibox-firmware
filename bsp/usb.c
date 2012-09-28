@@ -178,12 +178,13 @@ static const struct usb_string_descriptor_struct PROGMEM string3 = {
 
 // This table defines which descriptor data is sent for each specific
 // request from the host (in wValue and wIndex).
-static const struct descriptor_list_struct {
+struct descriptor_list_struct {
 	uint16_t	wValue;
 	uint16_t	wIndex;
 	const uint8_t	*addr;
 	uint8_t		length;
-} PROGMEM descriptor_list[] = {
+};
+static const struct descriptor_list_struct PROGMEM descriptor_list[] = {
 	{0x0100, 0x0000, device_descriptor, sizeof(device_descriptor)},
 	{0x0200, 0x0000, config1_descriptor, sizeof(config1_descriptor)},
 	{0x0300, 0x0000, (const uint8_t *)&string0, 4},

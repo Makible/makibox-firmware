@@ -5,7 +5,7 @@
 
 // Silence bogus warnings in avr-gcc < 4.6.3
 #undef PROGMEM
-#define PROGMEM __attribute__(( section(".progmem.data") ))
+#define PROGMEM __attribute__(( section(".progmem.text") ))
 #undef PSTR
 #define PSTR(s) (__extension__({static const char __c[] PROGMEM = (s); &__c[0];}))
 
