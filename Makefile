@@ -14,8 +14,10 @@ MAKIBOX_OBJS   = arc_func.o heater.o makibox.o store_eeprom.o \
 CC=avr-gcc
 CXX=avr-g++
 OBJCOPY=avr-objcopy
+
+
 CPPFLAGS       = -mmcu=$(MCU) -Ibsp/ -DF_CPU=$(F_CPU)L -Os -Wall \
-                 -ffunction-sections -fdata-sections
+                 -ffunction-sections -fdata-sections -g
 CFLAGS         = -std=gnu99
 CXXFLAGS       = -fno-exceptions
 LDFLAGS        = -mmcu=$(MCU) -Wl,--gc-sections -Os
@@ -36,6 +38,8 @@ all: makibox.hex
 clean:
 	rm -f $(BSP_OBJS)
 	rm -f $(MAKIBOX_OBJS)
+	rm -f makibox.elf
+	rm -f makibox.hex
 
 bsp: $(BSP_OBJS)
 makibox: $(MAKIBOX_OBJS)
