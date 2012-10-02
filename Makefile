@@ -7,8 +7,7 @@ BSP_OBJS       = pins_teensy.o usb.o WInterrupts.o wiring.o \
                  main.o new.o usb_api.o HardwareSerial.o Print.o \
                  Stream.o Tone.o WMath.o WString.o
 
-MAKIBOX_OBJS   = arc_func.o heater.o makibox.o store_eeprom.o \
-                 Sd2Card.o SdFile.o SdVolume.o
+MAKIBOX_OBJS   = arc_func.o heater.o makibox.o store_eeprom.o
 
 
 CC=avr-gcc

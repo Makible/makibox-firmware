@@ -118,10 +118,6 @@ void st_set_position(const long &x, const long &y, const long &z, const long &e)
 
 void check_buffer_while_arc();
 
-#ifdef SDSUPPORT
-void print_disk_info(void);
-#endif //SDSUPPORT
-
 #if (MINIMUM_FAN_START_SPEED > 0)
 void manage_fan_start_speed(void);
 #endif
