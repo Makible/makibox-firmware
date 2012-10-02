@@ -354,10 +354,6 @@ const int dropsegments=5; //everything with less than this number of steps will 
 //-----------------------------------------------------------------------
 
 
-//Uncomment this to see on the host if a wrong or unknown Command is recived
-//Only for Testing !!!
-//#define SEND_WRONG_CMD_INFO
-
 // Uncomment the following line to enable debugging. You can better control debugging below the following line
 //#define DEBUG
 #ifdef DEBUG

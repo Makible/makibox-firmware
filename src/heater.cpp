@@ -27,6 +27,8 @@
 #include "fastio.h"
 #include "pins.h"
 #include "makibox.h"
+#include "serial.h"
+
 
 #ifdef CONTROLLERFAN_PIN
   void controllerFan(void);
@@ -337,7 +339,7 @@ void PID_autotune(int PIDAT_test_temp)
   
   #define PIDAT_TIME_FACTOR ((HEATER_CHECK_INTERVAL*256.0) / 1000.0)
   
-  showString(PSTR("PID Autotune start\r\n"));
+  serial_send("PID Autotune start\r\n");
 
   target_temp = PIDAT_test_temp;
   
@@ -408,45 +410,38 @@ void PID_autotune(int PIDAT_test_temp)
             if(PIDAT_bias > (HEATER_CURRENT/2)) PIDAT_d = (HEATER_CURRENT - 1) - PIDAT_bias;
             else PIDAT_d = PIDAT_bias;
 
-            showString(PSTR(" bias: ")); Serial.print(PIDAT_bias);
-            showString(PSTR(" d: "));    Serial.print(PIDAT_d);
-            showString(PSTR(" min: "));  Serial.print(PIDAT_min);
-            showString(PSTR(" max: "));  Serial.println(PIDAT_max);
+            serial_send(" bias: %ld d: %ld min: %f max: %f", PIDAT_bias, PIDAT_d, PIDAT_min, PIDAT_max);
             
             if(PIDAT_cycles > 2) 
             {
               PIDAT_Ku = (4.0*PIDAT_d)/(3.14159*(PIDAT_max-PIDAT_min));
               PIDAT_Tu = ((float)(PIDAT_t_low + PIDAT_t_high)/1000.0);
               
-              showString(PSTR(" Ku: ")); Serial.print(PIDAT_Ku);
-              showString(PSTR(" Tu: ")); Serial.println(PIDAT_Tu);
+              serial_send(" Ku: %f Tu: %f\r\n", PIDAT_Ku, PIDAT_Tu);
 
               PIDAT_Kp = 0.60*PIDAT_Ku;
               PIDAT_Ki = 2*PIDAT_Kp/PIDAT_Tu;
               PIDAT_Kd = PIDAT_Kp*PIDAT_Tu/8;
-              showString(PSTR(" Clasic PID \r\n"));
-              //showString(PSTR(" Kp: ")); Serial.println(PIDAT_Kp);
-              //showString(PSTR(" Ki: ")); Serial.println(PIDAT_Ki);
-              //showString(PSTR(" Kd: ")); Serial.println(PIDAT_Kd);
-              showString(PSTR(" CFG Kp: ")); Serial.println((unsigned int)(PIDAT_Kp*256));
-              showString(PSTR(" CFG Ki: ")); Serial.println((unsigned int)(PIDAT_Ki*PIDAT_TIME_FACTOR));
-              showString(PSTR(" CFG Kd: ")); Serial.println((unsigned int)(PIDAT_Kd*PIDAT_TIME_FACTOR));
+              serial_send(" Clasic PID \r\n");
+              serial_send(" CFG Kp: %d\r\n", (unsigned int)(PIDAT_Kp*256));
+              serial_send(" CFG Ki: %d\r\n", (unsigned int)(PIDAT_Ki*PIDAT_TIME_FACTOR));
+              serial_send(" CFG Kd: %d\r\n", (unsigned int)(PIDAT_Kd*PIDAT_TIME_FACTOR));
               
               PIDAT_Kp = 0.30*PIDAT_Ku;
               PIDAT_Ki = PIDAT_Kp/PIDAT_Tu;
               PIDAT_Kd = PIDAT_Kp*PIDAT_Tu/3;
-              showString(PSTR(" Some overshoot \r\n"));
-              showString(PSTR(" CFG Kp: ")); Serial.println((unsigned int)(PIDAT_Kp*256));
-              showString(PSTR(" CFG Ki: ")); Serial.println((unsigned int)(PIDAT_Ki*PIDAT_TIME_FACTOR));
-              showString(PSTR(" CFG Kd: ")); Serial.println((unsigned int)(PIDAT_Kd*PIDAT_TIME_FACTOR));
+              serial_send(" Some overshoot \r\n");
+              serial_send(" CFG Kp: %d\r\n", (unsigned int)(PIDAT_Kp*256));
+              serial_send(" CFG Ki: %d\r\n", (unsigned int)(PIDAT_Ki*PIDAT_TIME_FACTOR));
+              serial_send(" CFG Kd: %d\r\n", (unsigned int)(PIDAT_Kd*PIDAT_TIME_FACTOR));
               /*
               PIDAT_Kp = 0.20*PIDAT_Ku;
               PIDAT_Ki = 2*PIDAT_Kp/PIDAT_Tu;
               PIDAT_Kd = PIDAT_Kp*PIDAT_Tu/3;
-              showString(PSTR(" No overshoot \r\n"));
-              showString(PSTR(" CFG Kp: ")); Serial.println((unsigned int)(PIDAT_Kp*256));
-              showString(PSTR(" CFG Ki: ")); Serial.println((unsigned int)(PIDAT_Ki*PIDAT_TIME_FACTOR));
-              showString(PSTR(" CFG Kd: ")); Serial.println((unsigned int)(PIDAT_Kd*PIDAT_TIME_FACTOR));
+              serial_send(" No overshoot \r\n");
+              serial_send(" CFG Kp: %d\r\n", (unsigned int)(PIDAT_Kp*256));
+              serial_send(" CFG Ki: %d\r\n", (unsigned int)(PIDAT_Ki*PIDAT_TIME_FACTOR));
+              serial_send(" CFG Kd: %d\r\n", (unsigned int)(PIDAT_Kd*PIDAT_TIME_FACTOR));
               */
             }
           }
@@ -468,7 +463,7 @@ void PID_autotune(int PIDAT_test_temp)
     
     if((PIDAT_input > (PIDAT_test_temp + 55)) || (PIDAT_input > 255))
     {
-      showString(PSTR("PID Autotune failed! Temperature to high\r\n"));
+      serial_send("PID Autotune failed! Temperature to high\r\n");
       target_temp = 0;
       return;
     }
@@ -476,21 +471,18 @@ void PID_autotune(int PIDAT_test_temp)
     if(millis() - PIDAT_temp_millis > 2000) 
     {
       PIDAT_temp_millis = millis();
-      showString(PSTR("ok T:"));
-      Serial.print(PIDAT_input);   
-      showString(PSTR(" @:"));
-      Serial.println((unsigned char)PIDAT_PWM_val*1);       
+      serial_send("ok T:%f @:%d\r\n", PIDAT_input, (unsigned char)PIDAT_PWM_val*1);
     }
     
     if(((millis() - PIDAT_t1) + (millis() - PIDAT_t2)) > (10L*60L*1000L*2L)) 
     {
-      showString(PSTR("PID Autotune failed! timeout\r\n"));
+      serial_send("PID Autotune failed! timeout\r\n");
       return;
     }
     
     if(PIDAT_cycles > 5) 
     {
-      showString(PSTR("PID Autotune finished ! Place the Kp, Ki and Kd constants in the configuration.h\r\n"));
+      serial_send("PID Autotune finished ! Place the Kp, Ki and Kd constants in the configuration.h\r\n");
       return;
     }
   }
@@ -517,43 +509,34 @@ void PID_autotune(int PIDAT_test_temp)
 
     if(manage_monitor <= 1)
     {
-      showString(PSTR("MTEMP:"));
-      Serial.print(millis());
+      serial_send("MTEMP:%lu", millis());
       if(manage_monitor<1)
       {
-        showString(PSTR(" "));
-        Serial.print(analog2temp(current_raw));
-        showString(PSTR(" "));
-        Serial.print(target_temp);
-        showString(PSTR(" "));
+        serial_send(" %d %d ", analog2temp(current_raw), target_temp);
         #ifdef PIDTEMP
-        Serial.println(heater_duty);
+          serial_send("%d\r\n", heater_duty);
         #else 
           #if (HEATER_0_PIN > -1)
           if(READ(HEATER_0_PIN))
-            Serial.println(255);
+            serial_send("255\r\n");
           else
-            Serial.println(0);
+            serial_send("0\r\n");
           #else
-          Serial.println(0);
+            serial_send("0\r\n");
           #endif
         #endif
       }
       #if THERMISTORBED!=0
       else
       {
-        showString(PSTR(" "));
-        Serial.print(analog2tempBed(current_bed_raw));
-        showString(PSTR(" "));
-        Serial.print(analog2tempBed(target_bed_raw));
-        showString(PSTR(" "));
+        serial_send(" %d %d ", analog2tempBed(current_bed_raw), analog2tempBed(target_bed_raw));
         #if (HEATER_1_PIN > -1)
           if(READ(HEATER_1_PIN))
-            Serial.println(255);
+            serial_send("255\r\n");
           else
-            Serial.println(0);
+            serial_send("0\r\n");
         #else
-          Serial.println(0);
+          serial_send("0\r\n");
         #endif  
       }
       #endif

@@ -155,6 +155,7 @@
 #include "makibox.h"
 #include "speed_lookuptable.h"
 #include "heater.h"
+#include "serial.h"
 
 #ifdef USE_ARC_FUNCTION
   #include "arc_func.h"
@@ -233,7 +234,7 @@
 // M603 - Show Free Ram
 
 
-#define _VERSION_TEXT "1.3.22T / 20.08.2012"
+static const char VERSION_TEXT[] = "1.3.22T / 20.08.2012";
 
 //Stepper Movement Variables
 char axis_codes[NUM_AXIS] = {'X', 'Y', 'Z', 'E'};
@@ -408,30 +409,14 @@ void analogWrite_check(uint8_t check_pin, int val)
   #endif  
 }
 
-//------------------------------------------------
-//Print a String from Flash to Serial (save RAM)
-//------------------------------------------------
-void showString (PGM_P s) 
-{
-  char c;
-  
-  while ((c = pgm_read_byte(s++)) != 0)
-    Serial.print(c);
-}
-
 
 //------------------------------------------------
 // Init 
 //------------------------------------------------
 void setup()
 { 
-  
-  Serial.begin(BAUDRATE);
-  showString(PSTR("// Makibox "));
-  showString(PSTR(_VERSION_TEXT));
-  showString(PSTR(" started.\r\n"));
-  //showString(PSTR("start\r\n"));
-
+  serial_init(); 
+  serial_send("// Makibox %s started.\r\n", VERSION_TEXT);
   cmdseqnbr = 0;
 
   
@@ -586,14 +571,14 @@ void setup()
 #endif  
  
   #if defined(PID_SOFT_PWM) || (defined(FAN_SOFT_PWM) && (FAN_PIN > -1))
-  showString(PSTR("// Soft PWM Init\r\n"));
+  serial_send("// Soft PWM Init\r\n");
   init_Timer2_softpwm();
   #endif
   
-  showString(PSTR("// Planner Init\r\n"));
+  serial_send("// Planner Init\r\n");
   plan_init();  // Initialize planner;
 
-  showString(PSTR("// Stepper Timer init\r\n"));
+  serial_send("// Stepper Timer init\r\n");
   st_init();    // Initialize stepper
 
   #ifdef USE_EEPROM_SETTINGS
@@ -606,15 +591,11 @@ void setup()
   updatePID();
   #endif
 
-  //Free Ram
-  showString(PSTR("// Free Ram: "));
-  Serial.println(FreeRam1());
-  
   //Planner Buffer Size
-  showString(PSTR("// Plan Buffer Size:"));
-  Serial.print((int)sizeof(block_t)*BLOCK_BUFFER_SIZE);
-  showString(PSTR(" / "));
-  Serial.println(BLOCK_BUFFER_SIZE);
+  serial_send("// Plan Buffer Size: %d / %d\r\n", (int)sizeof(block_t)*BLOCK_BUFFER_SIZE, BLOCK_BUFFER_SIZE);
+  
+  //Free Ram
+  serial_send("// Free Ram: %d\r\n", FreeRam1());
   
   for(int8_t i=0; i < NUM_AXIS; i++)
   {
@@ -737,12 +718,12 @@ void cmdbuf_process()
 
   if (!strchr(curcmd, 'N'))
   {
-    showString(PSTR("!! Invalid command - no line number."));
+    serial_send("!! Invalid command - no line number.\r\n");
     return;
   }
   if (!strchr(curcmd, '*'))
   {
-    showString(PSTR("!! Invalid command - no checksum."));
+    serial_send("!! Invalid command - no checksum.\r\n");
     return;
   }
 
@@ -755,7 +736,7 @@ void cmdbuf_process()
   }
   if (checksum != strtoul(strchr(curcmd, '*'), NULL, 16))
   {
-    showString(PSTR("!! Invalid command - bad checksum."));
+    serial_send("!! Invalid command - bad checksum.\r\n");
     return;
   }
 
@@ -763,21 +744,18 @@ void cmdbuf_process()
   long seqnbr = strtol(strchr(curcmd, 'N') + 1, NULL, 10);
   if (seqnbr > 0 && seqnbr != cmdseqnbr + 1)
   {
-    showString(PSTR("rs "));
-    Serial.println(seqnbr);
-    showString(PSTR("\r\n"));
+    serial_send("rs %ld\r\n", seqnbr);
     return;
   }
   cmdseqnbr++;
 
   // Dispatch command.
+  serial_send("// dispatching command\r\n");
   execute_command();
 
   // Success!
   previous_millis_cmd = millis();
-  showString(PSTR("ok "));
-  Serial.println(cmdseqnbr);
-  showString(PSTR("\r\n"));
+  serial_send("ok %ld\r\n", cmdseqnbr);
 }
 
 
@@ -880,13 +858,13 @@ void execute_command()
 
   if (code_G < 0 && code_M < 0)
   {
-    showString(PSTR("-- Unknown command.\r\n"));
+    serial_send("-- Unknown command.\r\n");
     return;
   }
 
   if (code_G >= 0 && code_M >= 0)
   {
-    showString(PSTR("-- Error, both G and M codes given.\r\n"));
+    serial_send("-- Error, both G and M codes given.\r\n");
     return;
   }
 
@@ -922,6 +900,7 @@ void execute_command()
         codenum = 0;
         if(code_seen('P')) codenum = code_value(); // milliseconds to wait
         if(code_seen('S')) codenum = code_value() * 1000; // seconds to wait
+        serial_send("-- delaying %lums\r\n", codenum);
         codenum += millis();  // keep track of when we started waiting
         st_synchronize();  // wait for all movements to finish
         while(millis()  < codenum ){
@@ -982,11 +961,7 @@ void execute_command()
         plan_set_position(current_position[X_AXIS], current_position[Y_AXIS], current_position[Z_AXIS], current_position[E_AXIS]);
         break;
       default:
-        #ifdef SEND_WRONG_CMD_INFO
-        showString(PSTR("-- Unknown code G"));
-        Serial.println(code_G);
-        showString(PSTR(".\r\n"));
-        #endif
+        serial_send("-- Unknown code G%d.\r\n", code_G);
       break;
     }
   }
@@ -1057,30 +1032,22 @@ void execute_command()
           bedtempC = analog2tempBed(current_bed_raw);
         #endif
         #if (TEMP_0_PIN > -1) || defined (HEATER_USES_MAX6675) || defined HEATER_USES_AD595
-            showString(PSTR("ok T"));
-            Serial.print(hotendtC); 
+          serial_send("ok T%d", hotendtC);
           #ifdef PIDTEMP
-            showString(PSTR(" D"));
-            Serial.print(heater_duty); 
+            serial_send(" D%d", heater_duty);
             /*
-            showString(PSTR(",P:"));
-            Serial.print(pTerm);
-            showString(PSTR(",I:"));
-            Serial.print(iTerm);
-            showString(PSTR(",D:"));
-            Serial.print(dTerm);
+            serial_send(",P:%d", pTerm);
+            serial_send(",I:%d", iTerm);
+            serial_send(",D:%d", dTerm);
             */
             #ifdef AUTOTEMP
-              showString(PSTR(" A"));
-              Serial.print(autotemp_setpoint);
+              serial_send(" A%d", autotemp_setpoint);
             #endif
           #endif
           #if TEMP_1_PIN > -1 || defined BED_USES_AD595
-            showString(PSTR(" B"));
-            Serial.println(bedtempC); 
-          #else
-            Serial.println();
+            serial_send(" B%d", bedtempC);
           #endif
+          serial_send("\r\n");
         #else
           #error No temperature source available
         #endif
@@ -1119,8 +1086,7 @@ void execute_command()
       #endif
           if( (millis() - codenum) > 1000 ) //Print Temp Reading every 1 second while heating up/cooling down
           {
-            showString(PSTR("T"));
-            Serial.println( analog2temp(current_raw) );
+            serial_send("T%d\r\n", analog2temp(current_raw));
             codenum = millis();
           }
           manage_heater();
@@ -1151,10 +1117,7 @@ void execute_command()
           if( (millis()-codenum) > 1000 ) //Print Temp Reading every 1 second while heating up.
           {
             hotendtC=analog2temp(current_raw);
-            showString(PSTR("T"));
-            Serial.print( hotendtC );
-            showString(PSTR(" B"));
-            Serial.println( analog2tempBed(current_bed_raw) ); 
+            serial_send("T%d B%d\r\n", hotendtC, analog2tempBed(current_bed_raw));
             codenum = millis(); 
           }
           manage_heater();
@@ -1280,61 +1243,46 @@ void execute_command()
 //        }
         break;
       case 93: // M93 show current axis steps.
-	showString(PSTR("ok"));
-	showString(PSTR(" X"));
-        Serial.print(axis_steps_per_unit[0]);
-	showString(PSTR(" Y"));
-        Serial.print(axis_steps_per_unit[1]);
-	showString(PSTR(" Z"));
-        Serial.print(axis_steps_per_unit[2]);
-	showString(PSTR(" E"));
-        Serial.println(axis_steps_per_unit[3]);
+        serial_send("ok X%f Y%f Z%f E%f\r\n",
+          axis_steps_per_unit[0],
+          axis_steps_per_unit[1],
+          axis_steps_per_unit[2],
+          axis_steps_per_unit[3]
+        );
         break;
       case 115: // M115
-        showString(PSTR("FIRMWARE_NAME: Makibox PROTOCOL_VERSION:1.0 MACHINE_TYPE:Mendel EXTRUDER_COUNT:1\r\n"));
-        //Serial.println(uuid);
-        showString(PSTR(_DEF_CHAR_UUID));
-        showString(PSTR("\r\n"));
+        serial_send("FIRMWARE_NAME: Makibox PROTOCOL_VERSION:1.0 MACHINE_TYPE:Mendel EXTRUDER_COUNT:1\r\n");
+        serial_send("00000000-0000-0000-0000-000000000000\r\n");
         break;
       case 114: // M114
-    showString(PSTR("ok"));
-	showString(PSTR(" X"));
-        Serial.print(current_position[0]);
-	showString(PSTR(" Y"));
-        Serial.print(current_position[1]);
-	showString(PSTR(" Z"));
-        Serial.print(current_position[2]);
-	showString(PSTR(" E"));
-        Serial.println(current_position[3]);
+        serial_send("ok X%f Y%f Z%f E%f\r\n",
+          current_position[0],
+          current_position[1],
+          current_position[2],
+          current_position[3]
+        );
         break;
       case 119: // M119
-        showString(PSTR("// ")); 
+        serial_send("// ");
       	#if (X_MIN_PIN > -1)
-          showString(PSTR("x_min:"));
-          Serial.print((READ(X_MIN_PIN)^X_ENDSTOP_INVERT)?"H ":"L ");
+      	  serial_send("x_min:%s", (READ(X_MIN_PIN)^X_ENDSTOP_INVERT)?"H ":"L ");
       	#endif
       	#if (X_MAX_PIN > -1)
-          showString(PSTR("x_max:"));
-          Serial.print((READ(X_MAX_PIN)^X_ENDSTOP_INVERT)?"H ":"L ");
+      	  serial_send("x_max:%s", (READ(X_MAX_PIN)^X_ENDSTOP_INVERT)?"H ":"L ");
       	#endif
       	#if (Y_MIN_PIN > -1)
-      	  showString(PSTR("y_min:"));
-          Serial.print((READ(Y_MIN_PIN)^Y_ENDSTOP_INVERT)?"H ":"L ");
+      	  serial_send("y_min:%s", (READ(Y_MIN_PIN)^Y_ENDSTOP_INVERT)?"H ":"L ");
       	#endif
       	#if (Y_MAX_PIN > -1)
-      	  showString(PSTR("y_max:"));
-          Serial.print((READ(Y_MAX_PIN)^Y_ENDSTOP_INVERT)?"H ":"L ");
+      	  serial_send("y_max:%s", (READ(Y_MAX_PIN)^Y_ENDSTOP_INVERT)?"H ":"L ");
       	#endif
       	#if (Z_MIN_PIN > -1)
-      	  showString(PSTR("z_min:"));
-          Serial.print((READ(Z_MIN_PIN)^Z_ENDSTOP_INVERT)?"H ":"L ");
+      	  serial_send("z_min:%s", (READ(Z_MIN_PIN)^Z_ENDSTOP_INVERT)?"H ":"L ");
       	#endif
       	#if (Z_MAX_PIN > -1)
-      	  showString(PSTR("z_max:"));
-          Serial.print((READ(Z_MAX_PIN)^Z_ENDSTOP_INVERT)?"H ":"L ");
+      	  serial_send("z_max:%s", (READ(Z_MAX_PIN)^Z_ENDSTOP_INVERT)?"H ":"L ");
       	#endif
-      
-        showString(PSTR("\r\n"));
+        serial_send("\r\n"); 
       	break;
       case 201: // M201  Set maximum acceleration in units/s^2 for print moves (M201 X1000 Y1000)
 
@@ -1381,9 +1329,7 @@ void execute_command()
       case 206: // M206 additional homing offset
         if(code_seen('D'))
         {
-          showString(PSTR("// Addhome X:")); Serial.print(add_homing[0]);
-          showString(PSTR(" Y:")); Serial.print(add_homing[1]);
-          showString(PSTR(" Z:")); Serial.println(add_homing[2]);
+          serial_send("// Addhome X:%f Y:%f Z:%f\r\n", add_homing[0], add_homing[1], add_homing[2]);
         }
 
         for(int8_t cnt_i=0; cnt_i < 3; cnt_i++) 
@@ -1464,38 +1410,11 @@ void execute_command()
       }
       break;  
 #endif      
-#ifdef DEBUG_HEATER_TEMP
-      case 601: // M601  show Extruder Temp jitter
-        #if (TEMP_0_PIN > -1) || defined (HEATER_USES_MAX6675)|| defined HEATER_USES_AD595
-          if(current_raw_maxval > 0)
-            tt_maxval = analog2temp(current_raw_maxval);
-          if(current_raw_minval < 10000)  
-            tt_minval = analog2temp(current_raw_minval);
-        #endif
-        
-            showString(PSTR("// Tmin:"));
-            Serial.print(tt_minval); 
-            showString(PSTR(" / Tmax:"));
-            Serial.print(tt_maxval); 
-            showString(PSTR(" "));
-      break;
-      case 602: // M602  reset Extruder Temp jitter
-            current_raw_minval = 32000;
-            current_raw_maxval = -32000;
-        
-            showString(PSTR("// T Minmax Reset "));
-      break;
-#endif
       case 603: // M603  Free RAM
-            showString(PSTR("// Free Ram: "));
-            Serial.println(FreeRam1()); 
+            serial_send("// Free Ram: %d\r\n", FreeRam1());
       break;
       default:
-            #ifdef SEND_WRONG_CMD_INFO
-            showString(PSTR("-- Unknown code M"));
-            Serial.println(code_M);
-            showString(PSTR(".\r\n"));
-            #endif
+            serial_send("-- Unknown code M%d.\r\n", code_M);
       break;
 
     }
@@ -3042,79 +2961,3 @@ void st_synchronize()
     #endif
   }   
 }
-
-
-#ifdef DEBUG
-void log_message(char*   message) {
-  Serial.print("DEBUG"); Serial.println(message);
-}
-
-void log_bool(char* message, bool value) {
-  Serial.print("DEBUG"); Serial.print(message); Serial.print(": "); Serial.println(value);
-}
-
-void log_int(char* message, int value) {
-  Serial.print("DEBUG"); Serial.print(message); Serial.print(": "); Serial.println(value);
-}
-
-void log_long(char* message, long value) {
-  Serial.print("DEBUG"); Serial.print(message); Serial.print(": "); Serial.println(value);
-}
-
-void log_float(char* message, float value) {
-  Serial.print("DEBUG"); Serial.print(message); Serial.print(": "); Serial.println(value);
-}
-
-void log_uint(char* message, unsigned int value) {
-  Serial.print("DEBUG"); Serial.print(message); Serial.print(": "); Serial.println(value);
-}
-
-void log_ulong(char* message, unsigned long value) {
-  Serial.print("DEBUG"); Serial.print(message); Serial.print(": "); Serial.println(value);
-}
-
-void log_int_array(char* message, int value[], int array_lenght) {
-  Serial.print("DEBUG"); Serial.print(message); Serial.print(": {");
-  for(int i=0; i < array_lenght; i++){
-    Serial.print(value[i]);
-    if(i != array_lenght-1) Serial.print(", ");
-  }
-  Serial.println("}");
-}
-
-void log_long_array(char* message, long value[], int array_lenght) {
-  Serial.print("DEBUG"); Serial.print(message); Serial.print(": {");
-  for(int i=0; i < array_lenght; i++){
-    Serial.print(value[i]);
-    if(i != array_lenght-1) Serial.print(", ");
-  }
-  Serial.println("}");
-}
-
-void log_float_array(char* message, float value[], int array_lenght) {
-  Serial.print("DEBUG"); Serial.print(message); Serial.print(": {");
-  for(int i=0; i < array_lenght; i++){
-    Serial.print(value[i]);
-    if(i != array_lenght-1) Serial.print(", ");
-  }
-  Serial.println("}");
-}
-
-void log_uint_array(char* message, unsigned int value[], int array_lenght) {
-  Serial.print("DEBUG"); Serial.print(message); Serial.print(": {");
-  for(int i=0; i < array_lenght; i++){
-    Serial.print(value[i]);
-    if(i != array_lenght-1) Serial.print(", ");
-  }
-  Serial.println("}");
-}
-
-void log_ulong_array(char* message, unsigned long value[], int array_lenght) {
-  Serial.print("DEBUG"); Serial.print(message); Serial.print(": {");
-  for(int i=0; i < array_lenght; i++){
-    Serial.print(value[i]);
-    if(i != array_lenght-1) Serial.print(", ");
-  }
-  Serial.println("}");
-}
-#endif

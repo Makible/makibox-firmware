@@ -7,7 +7,7 @@ BSP_OBJS       = pins_teensy.o usb.o WInterrupts.o wiring.o \
                  main.o new.o usb_api.o HardwareSerial.o Print.o \
                  Stream.o Tone.o WMath.o WString.o
 
-MAKIBOX_OBJS   = arc_func.o heater.o makibox.o store_eeprom.o
+MAKIBOX_OBJS   = arc_func.o heater.o makibox.o serial.o store_eeprom.o
 
 
 CC=avr-gcc
@@ -16,7 +16,8 @@ OBJCOPY=avr-objcopy
 
 
 CPPFLAGS       = -mmcu=$(MCU) -Ibsp/ -DF_CPU=$(F_CPU)L -Os -Wall \
-                 -ffunction-sections -fdata-sections -g
+                 -ffunction-sections -fdata-sections -g \
+                 -Wformat=2
 CFLAGS         = -std=gnu99
 CXXFLAGS       = -fno-exceptions
 LDFLAGS        = -mmcu=$(MCU) -Wl,--gc-sections -Os

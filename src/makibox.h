@@ -8,6 +8,17 @@
   #include <WProgram.h>  
 #endif
 
+
+// A bug in avr-gcc causes spurious warnings when printing a float value:
+//   warning: format ‘%f’ expects type ‘double’, but argument 2 has type ‘float’
+// (This is because the '%f' format is actually defined to take a double.)
+//
+// On the AVR architecture, float and double are identical.  This seems to be
+// confusing the compiler (see gcc bug #46372).  However, because they are
+// identical, we can simply #define away all our worries:
+#define float double
+
+
 #include "fastio.h"
 
 extern "C" void __cxa_pure_virtual();
@@ -89,7 +100,6 @@ typedef struct {
 
 
 void analogWrite_check(uint8_t check_pin, int val);
-void showString (PGM_P s);
 
 void manage_inactivity(byte debug);
 
@@ -120,14 +130,4 @@ void check_buffer_while_arc();
 
 #if (MINIMUM_FAN_START_SPEED > 0)
 void manage_fan_start_speed(void);
-#endif
-
-#ifdef DEBUG
-void log_message(char*   message);
-void log_bool(char* message, bool value);
-void log_int(char* message, int value);
-void log_long(char* message, long value);
-void log_float(char* message, float value);
-void log_uint(char* message, unsigned int value);
-void log_ulong(char* message, unsigned long value);
 #endif

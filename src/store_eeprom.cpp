@@ -22,6 +22,7 @@
 #include "makibox.h"
 #include "store_eeprom.h"
 #include "Configuration.h"
+#include "serial.h"
 
 #ifdef PIDTEMP
  extern unsigned int PID_Kp, PID_Ki, PID_Kd;
@@ -82,7 +83,7 @@ void EEPROM_StoreSettings()
 
   char ver2[4]=EEPROM_VERSION;
   EEPROM_write_setting(EEPROM_OFFSET, ver2); // validate data
-  showString(PSTR("Settings Stored\r\n"));
+  serial_send("Settings Stored\r\n");
  
 }
 
@@ -90,68 +91,41 @@ void EEPROM_StoreSettings()
 void EEPROM_printSettings()
 {  
   #ifdef PRINT_EEPROM_SETTING
-      showString(PSTR("Steps per unit:\r\n"));
-      showString(PSTR(" M92 X"));
-      Serial.print(axis_steps_per_unit[0]);
-      showString(PSTR(" Y"));
-      Serial.print(axis_steps_per_unit[1]);
-      showString(PSTR(" Z"));
-      Serial.print(axis_steps_per_unit[2]);
-      showString(PSTR(" E"));
-      Serial.println(axis_steps_per_unit[3]);
+      serial_send("Steps per unit:\r\n  M92 X%f Y%f Z%f E%f\r\n",
+        axis_steps_per_unit[0],
+        axis_steps_per_unit[1],
+        axis_steps_per_unit[2],
+        axis_steps_per_unit[3]
+      );
       
-      showString(PSTR("Maximum feedrates (mm/s):\r\n"));
-      showString(PSTR("  M202 X"));
-      Serial.print(max_feedrate[0]);
-      showString(PSTR(" Y"));
-      Serial.print(max_feedrate[1]); 
-      showString(PSTR(" Z"));
-      Serial.print(max_feedrate[2]); 
-      showString(PSTR(" E"));
-      Serial.println(max_feedrate[3]);
+      serial_send("Maximum feedrates (mm/s):\r\n  M202 X%f Y%f Z%f E%f\r\n",
+        max_feedrate[0],
+        max_feedrate[1],
+        max_feedrate[2],
+        max_feedrate[3]
+      );
 
-      showString(PSTR("Maximum Acceleration (mm/s2):\r\n"));
-      showString(PSTR("  M201 X"));
-      Serial.print(max_acceleration_units_per_sq_second[0] ); 
-      showString(PSTR(" Y"));
-      Serial.print(max_acceleration_units_per_sq_second[1] ); 
-      showString(PSTR(" Z"));
-      Serial.print(max_acceleration_units_per_sq_second[2] );
-      showString(PSTR(" E"));
-      Serial.println(max_acceleration_units_per_sq_second[3]);
+      serial_send("Maximum Acceleration (mm/s2):\r\n  M201 X%f Y%f Z%f E%f\r\n",
+        max_acceleration_units_per_sq_second[0],
+        max_acceleration_units_per_sq_second[1],
+        max_acceleration_units_per_sq_second[2],
+        max_acceleration_units_per_sq_second[3]
+      );
 
-      showString(PSTR("Acceleration: S=acceleration, T=retract acceleration\r\n"));
-      showString(PSTR("  M204 S"));
-      Serial.print(move_acceleration ); 
-      showString(PSTR(" T"));
-      Serial.println(retract_acceleration);
+      serial_send("Acceleration: S=acceleration, T=retract acceleration\r\n")
+      serial_send("  M204 S%d T%d\r\n", move_acceleration, retract_acceleration);
 
-      showString(PSTR("Advanced variables (mm/s): S=Min feedrate, T=Min travel feedrate, X=max xY jerk,  Z=max Z jerk, E=max E jerk\r\n"));
+      serial_send("Advanced variables (mm/s): S=Min feedrate, T=Min travel feedrate, X=max xY jerk,  Z=max Z jerk, E=max E jerk\r\n");
+      serial_send("  M205 S%d T%d X%d Z%d E%d\r\n",
+        minimumfeedrate,
+        mintravelfeedrate,
+        max_xy_jerk,
+        max_z_jerk,
+        max_e_jerk
+      );
 
-      showString(PSTR("  M205 S"));
-      Serial.print(minimumfeedrate ); 
-      showString(PSTR(" T" ));
-      Serial.print(mintravelfeedrate ); 
-//      showString(PSTR(" B"));
-//      Serial.print(min_seg_time ); 
-      showString(PSTR(" X"));
-      Serial.print(max_xy_jerk ); 
-      showString(PSTR(" Z"));
-      Serial.print(max_z_jerk);
-      showString(PSTR(" E"));
-      Serial.println(max_e_jerk);
-
-      
     #ifdef PIDTEMP
-    
-      showString(PSTR("PID settings:\r\n"));
-      showString(PSTR("  M301 P"));
-      Serial.print(PID_Kp); 
-      showString(PSTR(" I"));
-      Serial.print(PID_Ki); 
-      showString(PSTR(" D"));
-      Serial.println(PID_Kd);
-    
+      serial_send("PID settings:\r\n  M301 P%d I%d D%d\r\n", PID_Kp, PID_Ki, PID_Kd); 
     #endif
   #endif
 
@@ -186,7 +160,7 @@ void EEPROM_RetrieveSettings(bool def, bool printout)
        EEPROM_read_setting(Kd_address, PID_Kd);
       #endif
 
-      showString(PSTR("Stored settings retreived\r\n"));
+      serial_send("Stored settings retreived\r\n");
     }
     else 
     {
@@ -215,7 +189,7 @@ void EEPROM_RetrieveSettings(bool def, bool printout)
        PID_Kd = PID_DGAIN;
       #endif
 
-      showString(PSTR("Using Default settings\r\n"));
+      serial_send("Using Default settings\r\n");
     }
     
     if(printout)
