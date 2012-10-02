@@ -728,7 +728,7 @@ void cmdbuf_process()
   }
 
   // Validate the command's checksum.
-  uint16_t checksum;
+  uint16_t checksum = 0;
   int i = 0;
   while (curcmd[i] != '*')
   {
