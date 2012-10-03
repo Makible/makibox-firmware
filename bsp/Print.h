@@ -22,7 +22,6 @@
 
 #include <inttypes.h>
 #include <stdio.h> // for size_t
-#include "WString.h"
 
 #define DEC 10
 #define HEX 16
@@ -38,7 +37,7 @@ class Print
 	virtual size_t write(uint8_t b);
 	size_t write(const char *str)			{ return write((const uint8_t *)str, strlen(str)); }
 	virtual size_t write(const uint8_t *buffer, size_t size);
-	size_t print(const String &s);
+	//size_t print(const String &s);
 	size_t print(char c)				{ return write((uint8_t)c); }
 	size_t print(const char s[])			{ return write(s); }
 
@@ -56,7 +55,7 @@ class Print
 
 	size_t print(double n, int digits = 2)		{ return printFloat(n, digits); }
 	size_t println(void);
-	size_t println(const String &s)			{ return print(s) + println(); }
+	//size_t println(const String &s)			{ return print(s) + println(); }
 	size_t println(char c)				{ return print(c) + println(); }
 	size_t println(const char s[])			{ return print(s) + println(); }
 
@@ -90,7 +89,7 @@ class Print
 	virtual void write(uint8_t);
 	virtual void write(const char *str);
 	virtual void write(const uint8_t *buffer, size_t size);
-	void print(const String &s);
+	//void print(const String &s);
 	void print(char c)				{ write((uint8_t)c); }
 	void print(const char s[])			{ write(s); }
 
@@ -108,7 +107,7 @@ class Print
 
 	void print(double n, int digits = 2)		{ printFloat(n, digits); }
 	void println(void);
-	void println(const String &s)			{ print(s); println(); }
+	//void println(const String &s)			{ print(s); println(); }
 	void println(char c)				{ print(c); println(); }
 	void println(const char s[])			{ print(s); println(); }
 	void println(uint8_t b)				{ print(b); println(); }

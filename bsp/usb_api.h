@@ -2,6 +2,7 @@
 #define USBserial_h_
 
 #include <inttypes.h>
+#include <string.h>
 
 #include "Stream.h"
 

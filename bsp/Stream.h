@@ -43,8 +43,8 @@ class Stream : public Print
 	float parseFloat(char skipChar);
 	size_t readBytes(char *buffer, size_t length);
 	size_t readBytesUntil(char terminator, char *buffer, size_t length);
-	String readString(size_t max = 120);
-	String readStringUntil(char terminator, size_t max = 120);
+	//String readString(size_t max = 120);
+	//String readStringUntil(char terminator, size_t max = 120);
 	int getReadError() { return read_error; }
 	void clearReadError() { setReadError(0); }
   protected:

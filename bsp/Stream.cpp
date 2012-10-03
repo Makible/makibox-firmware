@@ -20,6 +20,10 @@
  parsing functions based on TextFinder library by Michael Margolis
  */
 
+
+#include <string.h>
+
+
 #include "Stream.h"
 #include "core_pins.h"
 
@@ -250,61 +254,3 @@ size_t Stream::readBytesUntil(char terminator, char *buffer, size_t length)
 	*buffer = 0;
 	return index; // return number of characters, not including null terminator
 }
-
-String Stream::readString(size_t max)
-{
-	String str;
-	size_t length = str.length();
-	while (length < max) {
-		int c = timedRead();
-		if (c < 0) {
-			setReadError();
-			break;	// timeout
-		}
-		if (c == 0) break;
-		str += (char)c;
-	}
-	return str;
-}
-
-String Stream::readStringUntil(char terminator, size_t max)
-{
-	String str;
-	size_t length = str.length();
-	while (length < max) {
-		int c = timedRead();
-		if (c < 0) {
-			setReadError();
-			break;	// timeout
-		}
-		if (c == 0 || c == terminator) break;
-		str += (char)c;
-	}
-	return str;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

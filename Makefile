@@ -5,7 +5,7 @@ F_CPU=16000000
 
 BSP_OBJS       = pins_teensy.o usb.o \
                  main.o usb_api.o HardwareSerial.o Print.o \
-                 Stream.o WString.o
+                 Stream.o
 
 MAKIBOX_OBJS   = arc_func.o heater.o makibox.o serial.o store_eeprom.o
 
