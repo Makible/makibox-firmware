@@ -776,7 +776,7 @@ FORCE_INLINE bool code_seen(char code)
   return (strchr_pointer != NULL);  //Return True if a character was found
 }
 
-FORCE_INLINE void homing_routine(char axis)
+FORCE_INLINE void homing_routine(unsigned char axis)
 {
   int min_pin, max_pin, home_dir, max_length, home_bounce;
 
