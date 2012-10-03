@@ -1706,11 +1706,6 @@ void calculate_trapezoid_for_block(block_t *block, float entry_factor, float exi
     plateau_steps = 0;
   }
 
-  #ifdef ADVANCE
-    volatile long initial_advance = block->advance*entry_factor*entry_factor; 
-    volatile long final_advance = block->advance*exit_factor*exit_factor;
-  #endif // ADVANCE
-  
  // block->accelerate_until = accelerate_steps;
  // block->decelerate_after = accelerate_steps+plateau_steps;
   CRITICAL_SECTION_START;  // Fill variables used by the stepper in a critical section
@@ -1719,10 +1714,6 @@ void calculate_trapezoid_for_block(block_t *block, float entry_factor, float exi
     block->decelerate_after = accelerate_steps+plateau_steps;
     block->initial_rate = initial_rate;
     block->final_rate = final_rate;
-  #ifdef ADVANCE
-      block->initial_advance = initial_advance;
-      block->final_advance = final_advance;
-  #endif //ADVANCE
   }
   CRITICAL_SECTION_END;
 }                    
@@ -2248,29 +2239,6 @@ void plan_buffer_line(float x, float y, float z, float e, float feed_rate)
   // Update previous path unit_vector and nominal speed
   memcpy(previous_speed, current_speed, sizeof(previous_speed)); // previous_speed[] = current_speed[]
   previous_nominal_speed = block->nominal_speed;
-  
-  #ifdef ADVANCE
-    // Calculate advance rate
-    if((block->steps_e == 0) || (block->steps_x == 0 && block->steps_y == 0 && block->steps_z == 0)) {
-      block->advance_rate = 0;
-      block->advance = 0;
-    }
-    else {
-      long acc_dist = estimate_acceleration_distance(0, block->nominal_rate, block->acceleration_st);
-      float advance = (STEPS_PER_CUBIC_MM_E * EXTRUDER_ADVANCE_K) * 
-        (current_speed[E_AXIS] * current_speed[E_AXIS] * EXTRUTION_AREA * EXTRUTION_AREA)*256;
-      block->advance = advance;
-      if(acc_dist == 0) {
-        block->advance_rate = 0;
-      } 
-      else {
-        block->advance_rate = advance / (float)acc_dist;
-      }
-    }
-
-  #endif // ADVANCE
-
-
   calculate_trapezoid_for_block(block, block->entry_speed/block->nominal_speed,
     safe_speed/block->nominal_speed);
     
@@ -2451,11 +2419,6 @@ static long counter_x,       // Counter variables for the bresenham line tracer
             counter_z,       
             counter_e;
 static unsigned long step_events_completed; // The number of step events executed in the current block
-#ifdef ADVANCE
-  static long advance_rate, advance, final_advance = 0;
-  static short old_advance = 0;
-#endif
-static short e_steps;
 static unsigned char busy = false; // TRUE when SIG_OUTPUT_COMPARE1A is being serviced. Used to avoid retriggering that handler.
 static long acceleration_time, deceleration_time;
 static unsigned short acc_step_rate; // needed for deceleration start point
@@ -2553,13 +2516,6 @@ FORCE_INLINE unsigned short calc_timer(unsigned short step_rate)
 // block begins.
 FORCE_INLINE void trapezoid_generator_reset()
 {
-  #ifdef ADVANCE
-    advance = current_block->initial_advance;
-    final_advance = current_block->final_advance;
-    // Do E steps + advance steps
-    e_steps += ((advance >>8) - old_advance);
-    old_advance = advance >>8;  
-  #endif
   deceleration_time = 0;
   
   
@@ -2586,9 +2542,6 @@ ISR(TIMER1_COMPA_vect)
       counter_z = counter_x;
       counter_e = counter_x;
       step_events_completed = 0;
-//      #ifdef ADVANCE
-//      e_steps = 0;
-//      #endif
     } 
     else {
         OCR1A=2000; // 1kHz.
@@ -2735,33 +2688,15 @@ ISR(TIMER1_COMPA_vect)
       }
     }
 
-    #ifndef ADVANCE
-      if ((out_bits & (1<<E_AXIS)) != 0) {  // -direction
-        WRITE(E_DIR_PIN,INVERT_E_DIR);
-      }
-      else { // +direction
-        WRITE(E_DIR_PIN,!INVERT_E_DIR);
-      }
-    #endif //!ADVANCE
-    
-
+    if ((out_bits & (1<<E_AXIS)) != 0) {  // -direction
+      WRITE(E_DIR_PIN,INVERT_E_DIR);
+    }
+    else { // +direction
+      WRITE(E_DIR_PIN,!INVERT_E_DIR);
+    }
     
     for(int8_t i=0; i < step_loops; i++) { // Take multiple steps per interrupt (For high speed moves) 
       
-      #ifdef ADVANCE
-      counter_e += current_block->steps_e;
-      if (counter_e > 0) {
-        counter_e -= current_block->step_event_count;
-        if ((out_bits & (1<<E_AXIS)) != 0) { // - direction
-          e_steps--;
-        }
-        else {
-          e_steps++;
-        }
-      }    
-      #endif //ADVANCE
-
-
       counter_x += current_block->steps_x;
       if (counter_x > 0) {
         if(!endstop_x_hit)
@@ -2810,14 +2745,12 @@ ISR(TIMER1_COMPA_vect)
         WRITE(Z_STEP_PIN, LOW);
       }
 
-      #ifndef ADVANCE
-        counter_e += current_block->steps_e;
-        if (counter_e > 0) {
-          WRITE(E_STEP_PIN, HIGH);
-          counter_e -= current_block->step_event_count;
-          WRITE(E_STEP_PIN, LOW);
-        }
-      #endif //!ADVANCE
+      counter_e += current_block->steps_e;
+      if (counter_e > 0) {
+        WRITE(E_STEP_PIN, HIGH);
+        counter_e -= current_block->step_event_count;
+        WRITE(E_STEP_PIN, LOW);
+      }
 
       step_events_completed += 1;  
       if(step_events_completed >= current_block->step_event_count) break;
@@ -2839,16 +2772,6 @@ ISR(TIMER1_COMPA_vect)
       timer = calc_timer(acc_step_rate);
       OCR1A = timer;
       acceleration_time += timer;
-      #ifdef ADVANCE
-        for(int8_t i=0; i < step_loops; i++) {
-          advance += advance_rate;
-        }
-        //if(advance > current_block->advance) advance = current_block->advance;
-        // Do E steps + advance steps
-        e_steps += ((advance >>8) - old_advance);
-        old_advance = advance >>8;  
-        
-      #endif
     } 
     else if (step_events_completed > (unsigned long int)current_block->decelerate_after) {   
       MultiU24X24toH16(step_rate, deceleration_time, current_block->acceleration_rate);
@@ -2868,15 +2791,6 @@ ISR(TIMER1_COMPA_vect)
       timer = calc_timer(step_rate);
       OCR1A = timer;
       deceleration_time += timer;
-      #ifdef ADVANCE
-        for(int8_t i=0; i < step_loops; i++) {
-          advance -= advance_rate;
-        }
-        if(advance < final_advance) advance = final_advance;
-        // Do E steps + advance steps
-        e_steps += ((advance >>8) - old_advance);
-        old_advance = advance >>8;  
-      #endif //ADVANCE
     }
     else {
       OCR1A = OCR1A_nominal;
@@ -2890,35 +2804,6 @@ ISR(TIMER1_COMPA_vect)
   } 
 }
 
-#ifdef ADVANCE
-
-unsigned char old_OCR0A;
-// Timer interrupt for E. e_steps is set in the main routine;
-// Timer 0 is shared with millies
-ISR(TIMER0_COMPA_vect)
-{
-    old_OCR0A += 52; // ~10kHz interrupt (250000 / 26 = 9615kHz)
-    OCR0A = old_OCR0A;
-  // Set E direction (Depends on E direction + advance)
-  for(unsigned char i=0; i<4;i++) 
-  {
-      if (e_steps != 0)
-      {
-        WRITE(E0_STEP_PIN, LOW);
-        if (e_steps < 0) {
-          WRITE(E0_DIR_PIN, INVERT_E0_DIR);
-          e_steps++;
-          WRITE(E0_STEP_PIN, HIGH);
-        } 
-        else if (e_steps > 0) {
-          WRITE(E0_DIR_PIN, !INVERT_E0_DIR);
-       	  e_steps--;
-    	  WRITE(E0_STEP_PIN, HIGH);
-  	    }
-      }
-    }
-  }
-#endif // ADVANCE
 
 void st_init()
 {
@@ -2942,15 +2827,6 @@ void st_init()
   OCR1A = 0x4000;
   TCNT1 = 0;
   ENABLE_STEPPER_DRIVER_INTERRUPT();
-
-#ifdef ADVANCE
-  #if defined(TCCR0A) && defined(WGM01)
-    TCCR0A &= ~(1<<WGM01);
-    TCCR0A &= ~(1<<WGM00);
-  #endif  
-  e_steps = 0;
-  TIMSK0 |= (1<<OCIE0A);
-#endif //ADVANCE
 
   #ifdef ENDSTOPS_ONLY_FOR_HOMING
     enable_endstops(false);
