@@ -843,7 +843,6 @@ FORCE_INLINE void homing_routine(char axis)
 void execute_command()
 {
   unsigned long codenum; //throw away variable
-  char *starpos = NULL;
   int code_G = -1;
   int code_M = -1;
 
