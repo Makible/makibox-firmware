@@ -1,7 +1,7 @@
 #ifndef SPEED_LOOKUPTABLE_H
 #define SPEED_LOOKUPTABLE_H
 
-#include "fixed_pgmspace.h"
+#include <bsp/pgmspace.h>
 
 
  #if F_CPU == 16000000

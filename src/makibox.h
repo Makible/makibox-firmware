@@ -1,12 +1,7 @@
 // Tonokip RepRap firmware rewrite based off of Hydra-mmm firmware.
 // Licence: GPL
 
-//Check Version of Arduino and then include the right libraries
-#if defined(ARDUINO) && ARDUINO >= 100
-  #include "Arduino.h"
-#else
-  #include <WProgram.h>  
-#endif
+#include <bsp/WProgram.h>
 
 
 // A bug in avr-gcc causes spurious warnings when printing a float value:

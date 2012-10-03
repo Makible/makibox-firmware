@@ -19,7 +19,7 @@
   along with Grbl.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "fixed_pgmspace.h"
+#include <bsp/pgmspace.h>
 #include <math.h>
 
 #include "Configuration.h"

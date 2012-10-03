@@ -23,7 +23,7 @@
 
 
 #include <avr/io.h>
-#include "fixed_pgmspace.h"
+#include "pgmspace.h"
 #include <avr/sleep.h>
 #include "wiring_private.h"
 #include "pins_arduino.h"

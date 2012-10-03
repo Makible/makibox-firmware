@@ -15,7 +15,7 @@ CXX=avr-g++
 OBJCOPY=avr-objcopy
 
 
-CPPFLAGS       = -mmcu=$(MCU) -Ibsp/ -DF_CPU=$(F_CPU)L -Os \
+CPPFLAGS       = -mmcu=$(MCU) -I. -DF_CPU=$(F_CPU)L -Os \
                  -ffunction-sections -fdata-sections -g \
                  -Wall -Wformat=2 -Werror
 CFLAGS         = -std=gnu99

@@ -1,11 +1,11 @@
 
 
-#include "fixed_pgmspace.h"
+#include <bsp/pgmspace.h>
 #include <stdarg.h>
 #include <stdio.h>
 
 #include "Configuration.h"
-#include "usb_api.h"
+#include <bsp/usb_api.h>
 
 
 void serial_init()

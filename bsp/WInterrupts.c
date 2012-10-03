@@ -23,7 +23,7 @@
 
 #include <avr/io.h>
 #include <avr/interrupt.h>
-#include "fixed_pgmspace.h"
+#include "pgmspace.h"
 #include <stdint.h>
 
 #include "wiring.h"

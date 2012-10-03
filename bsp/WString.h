@@ -26,7 +26,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "fixed_pgmspace.h"
+#include "pgmspace.h"
 
 
 // When compiling programs with this class, the following gcc parameters

@@ -24,7 +24,7 @@
 #include <string.h>
 #include <inttypes.h>
 #include <math.h>
-#include "fixed_pgmspace.h"
+#include "pgmspace.h"
 #include "wiring.h"
 
 #include "Print.h"
