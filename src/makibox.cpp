@@ -651,7 +651,7 @@ void check_buffer_while_arc()
 //------------------------------------------------
 void cmdbuf_read_serial() 
 { 
-  while (Serial.available() > 0)
+  while (serial_can_read())
   {
     char ch;
     if (buflen >= BUFSIZE)
@@ -664,7 +664,7 @@ void cmdbuf_read_serial()
         // just silently truncating the command?
         bufpos = MAX_CMD_SIZE - 1;
     }
-    ch = Serial.read();
+    ch = serial_read();
     cmdbuf[bufindw][bufpos] = ch;
     bufpos++;
     if (ch == '\n' || ch == '\r')

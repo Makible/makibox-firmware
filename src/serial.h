@@ -1,6 +1,8 @@
 
 
 void serial_init();
+bool serial_can_read();
+char serial_read();
 
 
 // Serial output with printf()-style string formatting.  The version that works

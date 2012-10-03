@@ -14,6 +14,24 @@ void serial_init()
 }
 
 
+bool serial_can_read()
+{
+    return Serial.available() > 0;
+}
+
+
+char serial_read()
+{
+    int ch = Serial.read();
+    if (ch < 0 || ch > 255)
+    {
+        // TODO:  error handling, somehow?
+        return 0;
+    }
+    return (char)ch;
+}
+
+
 void serial_printf(const char *fmt, ...)
 {
     char buf[128];
