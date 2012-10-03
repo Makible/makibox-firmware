@@ -189,7 +189,9 @@ const long min_time_before_dir_change = 30; //milliseconds
 #define SLOWDOWN
 
 
-const int dropsegments=5; //everything with less than this number of steps will be ignored as move and joined with the next movement
+// everything with less than this number of steps will be ignored as move and
+// joined with the next movement
+#define DROP_SEGMENTS 5
 
 //-----------------------------------------------------------------------
 // Machine UUID
