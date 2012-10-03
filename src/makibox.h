@@ -1,8 +1,6 @@
 // Tonokip RepRap firmware rewrite based off of Hydra-mmm firmware.
 // Licence: GPL
 
-#include <bsp/WProgram.h>
-
 
 // A bug in avr-gcc causes spurious warnings when printing a float value:
 //   warning: format ‘%f’ expects type ‘double’, but argument 2 has type ‘float’
@@ -89,7 +87,7 @@ typedef struct {
 
 void analogWrite_check(uint8_t check_pin, int val);
 
-void manage_inactivity(byte debug);
+void manage_inactivity(unsigned char debug);
 
 void cmdbuf_read_serial();
 void cmdbuf_process();
@@ -102,7 +100,7 @@ void prepare_arc_move(char isclockwise);
   FORCE_INLINE void get_arc_coordinates();
 #endif
 
-void kill(byte debug);
+void kill();
 
 void check_axes_activity();
 void plan_init();

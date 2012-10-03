@@ -21,7 +21,11 @@
 */
 
 
+#include <avr/interrupt.h>
+#include <bsp/core_pins.h>
 #include <bsp/pgmspace.h>
+#include <math.h>
+#include <stdlib.h>
 
 #include "heater.h"
 #include "fastio.h"
@@ -29,6 +33,8 @@
 #include "makibox.h"
 #include "serial.h"
 
+
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
 
 #ifdef CONTROLLERFAN_PIN
   void controllerFan(void);
@@ -105,7 +111,6 @@ unsigned long previous_millis_heater, previous_millis_bed_heater, previous_milli
 #ifdef MAXTEMP
   int maxttemp = temp2analogh(MAXTEMP);
 #endif
-
 
 
 #define HEAT_INTERVAL 250
@@ -389,8 +394,8 @@ void PID_autotune(int PIDAT_test_temp)
       PIDAT_input_help = 0;
       PIDAT_count_input = 0;
       
-      PIDAT_max=max(PIDAT_max,PIDAT_input);
-      PIDAT_min=min(PIDAT_min,PIDAT_input);
+      PIDAT_max=fmax(PIDAT_max,PIDAT_input);
+      PIDAT_min=fmin(PIDAT_min,PIDAT_input);
       
       if(PIDAT_heating == true && PIDAT_input > PIDAT_test_temp) 
       {
@@ -415,7 +420,14 @@ void PID_autotune(int PIDAT_test_temp)
           if(PIDAT_cycles > 0) 
           {
             PIDAT_bias += (PIDAT_d*(PIDAT_t_high - PIDAT_t_low))/(PIDAT_t_low + PIDAT_t_high);
-            PIDAT_bias = constrain(PIDAT_bias, 20 ,HEATER_CURRENT - 20);
+            if (PIDAT_bias < 20)
+            {
+              PIDAT_bias = 20;
+            }
+            if (PIDAT_bias > HEATER_CURRENT - 20)
+            {
+              PIDAT_bias = HEATER_CURRENT - 20;
+            }
             if(PIDAT_bias > (HEATER_CURRENT/2)) PIDAT_d = (HEATER_CURRENT - 1) - PIDAT_bias;
             else PIDAT_d = PIDAT_bias;
 
@@ -639,13 +651,16 @@ void PID_autotune(int PIDAT_test_temp)
       
       prev_temp = current_temp;
       pTerm = ((long)PID_Kp * error) / 256;
-      const int H0 = min(HEATER_DUTY_FOR_SETPOINT(target_temp),HEATER_CURRENT);
+      int H0 = MIN(HEATER_DUTY_FOR_SETPOINT(target_temp),HEATER_CURRENT);
       heater_duty = H0 + pTerm;
       
       if(error < 30)
       {
         temp_iState += error;
-        temp_iState = constrain(temp_iState, temp_iState_min, temp_iState_max);
+        if (temp_iState < temp_iState_min)
+          temp_iState = temp_iState_min;
+        if (temp_iState > temp_iState_max)
+          temp_iState = temp_iState_max;
         iTerm = ((long)PID_Ki * temp_iState) / 256;
         heater_duty += iTerm;
       }
@@ -659,7 +674,10 @@ void PID_autotune(int PIDAT_test_temp)
       
       dTerm = ((long)PID_Kd * delta_temp) / (256*log3);
       heater_duty += dTerm;
-      heater_duty = constrain(heater_duty, 0, HEATER_CURRENT);
+      if (heater_duty < 0)
+        heater_duty = 0;
+      if (heater_duty > HEATER_CURRENT)
+        heater_duty = HEATER_CURRENT;
 
       #ifdef PID_SOFT_PWM
         if(target_raw != 0)
@@ -674,9 +692,18 @@ void PID_autotune(int PIDAT_test_temp)
     
         #if LED_PIN>-1
           if(target_raw != 0)
-            analogWrite(LED_PIN, constrain(LED_PWM_FOR_BRIGHTNESS(heater_duty),0,255));
+          {
+            int pwm = LED_PWM_FOR_BRIGHTNESS(heater_duty);
+            if (pwm < 0)
+              pwm = 0;
+            if (pwm > 255)
+              pwm = 255;
+            analogWrite(LED_PIN, pwm);
+          }
           else
+          {
             analogWrite(LED_PIN, 0);
+          }
         #endif
       #endif
   
@@ -761,7 +788,7 @@ void PID_autotune(int PIDAT_test_temp)
 int temp2analog_thermistor(int celsius, const short table[][2], int numtemps) 
 {
     int raw = 0;
-    byte i;
+    unsigned char i;
     
     for (i=1; i<numtemps; i++)
     {
@@ -800,7 +827,7 @@ int temp2analog_max6675(int celsius)
 #if defined (HEATER_USES_THERMISTOR) || defined (BED_USES_THERMISTOR)
 int analog2temp_thermistor(int raw,const short table[][2], int numtemps) {
     int celsius = 0;
-    byte i;
+    unsigned char i;
     
     raw = 1023 - raw;
 

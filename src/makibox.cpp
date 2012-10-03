@@ -145,8 +145,12 @@
 
 */
 
+#include <avr/interrupt.h>
+#include <bsp/core_pins.h>
 #include <bsp/pgmspace.h>
 #include <math.h>
+#include <stdlib.h>
+#include <string.h>
 #include <util/crc16.h>
 
 #include "fastio.h"
@@ -164,6 +168,11 @@
 #ifdef USE_EEPROM_SETTINGS
   #include "store_eeprom.h"
 #endif
+
+extern "C" {
+  void setup();
+  void loop();
+}
 
 #ifndef CRITICAL_SECTION_START
 #define CRITICAL_SECTION_START  unsigned char _sreg = SREG; cli()
@@ -354,6 +363,9 @@ unsigned long stepper_inactive_time = 0;
 //Temp Monitor for repetier
 unsigned char manage_monitor = 255;
 
+#define MIN(a,b) ((a)<(b)?(a):(b))                                               
+#define MAX(a,b) ((a)>(b)?(a):(b))                                               
+#define CONSTRAIN(amt,low,high) ((amt)<(low)?(low):((amt)>(high)?(high):(amt))) 
 
 
 int FreeRam1(void)
@@ -1006,7 +1018,7 @@ void execute_command()
         #ifdef WATCHPERIOD
             if(target_raw > current_raw)
             {
-                watchmillis = max(1,millis());
+                watchmillis = MAX(1,millis());
                 watch_raw = current_raw;
             }
             else
@@ -1060,7 +1072,7 @@ void execute_command()
         #ifdef WATCHPERIOD
             if(target_raw>current_raw)
             {
-                watchmillis = max(1,millis());
+                watchmillis = MAX(1,millis());
                 watch_raw = current_raw;
             }
             else
@@ -1133,7 +1145,7 @@ void execute_command()
 #endif
         if (code_seen('S'))
         {
-            unsigned char l_fan_code_val = constrain(code_value(),0,255);
+            unsigned char l_fan_code_val = CONSTRAIN(code_value(),0,255);
             
             #if (MINIMUM_FAN_START_SPEED > 0)
               if(l_fan_code_val > 0 && fan_last_speed == 0)
@@ -1341,7 +1353,7 @@ void execute_command()
         if(code_seen('S')) 
         {
           feedmultiply = code_value() ;
-          feedmultiply = constrain(feedmultiply, 20, 200);
+          feedmultiply = CONSTRAIN(feedmultiply, 20, 200);
           feedmultiplychanged=true;
         }
       }
@@ -1351,7 +1363,7 @@ void execute_command()
         if(code_seen('S')) 
         {
           extrudemultiply = code_value() ;
-          extrudemultiply = constrain(extrudemultiply, 40, 200);
+          extrudemultiply = CONSTRAIN(extrudemultiply, 40, 200);
         }
       }
       break;
@@ -1546,7 +1558,7 @@ FORCE_INLINE void kill()
   
 }
 
-FORCE_INLINE void manage_inactivity(byte debug) 
+FORCE_INLINE void manage_inactivity(unsigned char debug) 
 { 
   if( (millis()-previous_millis_cmd) >  max_inactive_time ) if(max_inactive_time) kill(); 
   
@@ -1701,8 +1713,8 @@ void calculate_trapezoid_for_block(block_t *block, float entry_factor, float exi
   if (plateau_steps < 0) {
     accelerate_steps = ceil(
       intersection_distance(block->initial_rate, block->final_rate, acceleration, block->step_event_count));
-    accelerate_steps = max(accelerate_steps,0); // Check limits due to numerical round-off
-    accelerate_steps = min(accelerate_steps,block->step_event_count);
+    accelerate_steps = MAX(accelerate_steps,0); // Check limits due to numerical round-off
+    accelerate_steps = MIN(accelerate_steps,block->step_event_count);
     plateau_steps = 0;
   }
 
@@ -1747,7 +1759,7 @@ void planner_reverse_pass_kernel(block_t *previous, block_t *current, block_t *n
       // If nominal length true, max junction speed is guaranteed to be reached. Only compute
       // for max allowable speed if block is decelerating and nominal length is false.
       if ((!current->nominal_length_flag) && (current->max_entry_speed > next->entry_speed)) {
-        current->entry_speed = min( current->max_entry_speed,
+        current->entry_speed = MIN( current->max_entry_speed,
           max_allowable_speed(-current->acceleration,next->entry_speed,current->millimeters));
       } else {
         current->entry_speed = current->max_entry_speed;
@@ -1793,7 +1805,7 @@ void planner_forward_pass_kernel(block_t *previous, block_t *current, block_t *n
   // If nominal length is true, max junction speed is guaranteed to be reached. No need to recheck.
   if (!previous->nominal_length_flag) {
     if (previous->entry_speed < current->entry_speed) {
-      double entry_speed = min( current->entry_speed,
+      double entry_speed = MIN( current->entry_speed,
         max_allowable_speed(-previous->acceleration,previous->entry_speed,previous->millimeters) );
 
       // Check for junction speed change
@@ -1981,7 +1993,7 @@ void plan_buffer_line(float x, float y, float z, float e, float feed_rate)
   block->steps_e = labs(target[E_AXIS]-position[E_AXIS]);
   block->steps_e *= extrudemultiply;
   block->steps_e /= 100;
-  block->step_event_count = max(block->steps_x, max(block->steps_y, max(block->steps_z, block->steps_e)));
+  block->step_event_count = MAX(block->steps_x, MAX(block->steps_y, MAX(block->steps_z, block->steps_e)));
 
   // Bail if this is a zero-length block
   if (block->step_event_count <= DROP_SEGMENTS) { return; };
@@ -2101,12 +2113,12 @@ void plan_buffer_line(float x, float y, float z, float e, float feed_rate)
   {
     current_speed[i] = delta_mm[i] * inverse_second;
     if(fabs(current_speed[i]) > max_feedrate[i])
-      speed_factor = min(speed_factor, max_feedrate[i] / fabs(current_speed[i]));
+      speed_factor = fmin(speed_factor, max_feedrate[i] / fabs(current_speed[i]));
   }
   
   current_speed[E_AXIS] = delta_mm[E_AXIS] * inverse_second;
   if(fabs(current_speed[E_AXIS]) > max_E_feedrate_calc)
-    speed_factor = min(speed_factor, max_E_feedrate_calc / fabs(current_speed[E_AXIS]));
+    speed_factor = fmin(speed_factor, max_E_feedrate_calc / fabs(current_speed[E_AXIS]));
 
 
   // Correct the speed  
@@ -2184,10 +2196,10 @@ void plan_buffer_line(float x, float y, float z, float e, float feed_rate)
   float vmax_junction_factor = 1.0; 
 
   if(fabs(current_speed[Z_AXIS]) > max_z_jerk/2) 
-    vmax_junction = min(vmax_junction, max_z_jerk/2);
+    vmax_junction = fmin(vmax_junction, max_z_jerk/2);
 
   if(fabs(current_speed[E_AXIS]) > max_e_jerk/2) 
-    vmax_junction = min(vmax_junction, max_e_jerk/2);
+    vmax_junction = fmin(vmax_junction, max_e_jerk/2);
 
   if(G92_reset_previous_speed == 1)
   {
@@ -2195,7 +2207,7 @@ void plan_buffer_line(float x, float y, float z, float e, float feed_rate)
     G92_reset_previous_speed = 0;  
   }
 
-  vmax_junction = min(vmax_junction, block->nominal_speed);
+  vmax_junction = fmin(vmax_junction, block->nominal_speed);
   float safe_speed = vmax_junction;
 
   if ((moves_queued > 1) && (previous_nominal_speed > 0.0001)) {
@@ -2207,18 +2219,18 @@ void plan_buffer_line(float x, float y, float z, float e, float feed_rate)
       vmax_junction_factor = (max_xy_jerk/jerk);
     } 
     if(fabs(current_speed[Z_AXIS] - previous_speed[Z_AXIS]) > max_z_jerk) {
-      vmax_junction_factor= min(vmax_junction_factor, (max_z_jerk/fabs(current_speed[Z_AXIS] - previous_speed[Z_AXIS])));
+      vmax_junction_factor= fmin(vmax_junction_factor, (max_z_jerk/fabs(current_speed[Z_AXIS] - previous_speed[Z_AXIS])));
     } 
     if(fabs(current_speed[E_AXIS] - previous_speed[E_AXIS]) > max_e_jerk) {
-      vmax_junction_factor = min(vmax_junction_factor, (max_e_jerk/fabs(current_speed[E_AXIS] - previous_speed[E_AXIS])));
+      vmax_junction_factor = fmin(vmax_junction_factor, (max_e_jerk/fabs(current_speed[E_AXIS] - previous_speed[E_AXIS])));
     } 
-    vmax_junction = min(previous_nominal_speed, vmax_junction * vmax_junction_factor); // Limit speed to max previous speed
+    vmax_junction = fmin(previous_nominal_speed, vmax_junction * vmax_junction_factor); // Limit speed to max previous speed
   }
   block->max_entry_speed = vmax_junction;
 
   // Initialize block entry speed. Compute based on deceleration to user-defined MINIMUM_PLANNER_SPEED.
   double v_allowable = max_allowable_speed(-block->acceleration,MINIMUM_PLANNER_SPEED,block->millimeters);
-  block->entry_speed = min(vmax_junction, v_allowable);
+  block->entry_speed = fmin(vmax_junction, v_allowable);
 
   // Initialize planner efficiency flags
   // Set flag if block will always reach maximum junction speed regardless of entry/exit speeds.
