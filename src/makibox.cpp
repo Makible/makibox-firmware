@@ -146,7 +146,6 @@
 */
 
 #include <avr/interrupt.h>
-#include <bsp/core_pins.h>
 #include <bsp/pgmspace.h>
 #include <math.h>
 #include <stdlib.h>
@@ -154,8 +153,7 @@
 #include <util/crc16.h>
 
 #include "config.h"
-#include "fastio.h"
-#include "pins.h"
+#include "board_io.h"
 #include "makibox.h"
 #include "speed_lookuptable.h"
 #include "heater.h"
@@ -361,6 +359,37 @@ unsigned long stepper_inactive_time = 0;
 
 //Temp Monitor for repetier
 unsigned char manage_monitor = 255;
+
+
+#if X_ENABLE_PIN > -1
+#define  enable_x() WRITE(X_ENABLE_PIN, X_ENABLE_ON)
+#define disable_x() WRITE(X_ENABLE_PIN,!X_ENABLE_ON)
+#else
+#define enable_x() ;
+#define disable_x() ;
+#endif
+#if Y_ENABLE_PIN > -1
+#define  enable_y() WRITE(Y_ENABLE_PIN, Y_ENABLE_ON)
+#define disable_y() WRITE(Y_ENABLE_PIN,!Y_ENABLE_ON)
+#else
+#define enable_y() ;
+#define disable_y() ;
+#endif
+#if Z_ENABLE_PIN > -1
+#define  enable_z() WRITE(Z_ENABLE_PIN, Z_ENABLE_ON)
+#define disable_z() WRITE(Z_ENABLE_PIN,!Z_ENABLE_ON)
+#else
+#define enable_z() ;
+#define disable_z() ;
+#endif
+#if E_ENABLE_PIN > -1
+#define  enable_e() WRITE(E_ENABLE_PIN, E_ENABLE_ON)
+#define disable_e() WRITE(E_ENABLE_PIN,!E_ENABLE_ON)
+#else
+#define enable_e() ;
+#define disable_e() ;
+#endif
+
 
 #define MIN(a,b) ((a)<(b)?(a):(b))                                               
 #define MAX(a,b) ((a)>(b)?(a):(b))                                               
@@ -1524,10 +1553,8 @@ FORCE_INLINE void kill()
   disable_y();
   disable_z();
   disable_e();
-  
-  if(PS_ON_PIN > -1) pinMode(PS_ON_PIN,INPUT);
-  
 }
+
 
 FORCE_INLINE void manage_inactivity(unsigned char debug) 
 { 

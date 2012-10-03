@@ -22,14 +22,12 @@
 
 
 #include <avr/interrupt.h>
-#include <bsp/core_pins.h>
 #include <bsp/pgmspace.h>
 #include <math.h>
 #include <stdlib.h>
 
 #include "heater.h"
-#include "fastio.h"
-#include "pins.h"
+#include "board_io.h"
 #include "makibox.h"
 #include "serial.h"
 
