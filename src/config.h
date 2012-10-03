@@ -174,14 +174,6 @@ const long min_time_before_dir_change = 30; //milliseconds
 // joined with the next movement
 #define DROP_SEGMENTS 5
 
-//-----------------------------------------------------------------------
-// Machine UUID
-//-----------------------------------------------------------------------
-// This may be useful if you have multiple machines and wish to identify them by using the M115 command. 
-// By default we set it to zeros.
-#define _DEF_CHAR_UUID "00000000-0000-0000-0000-000000000000"
-
-
 
 //-----------------------------------------------------------------------
 //// Planner buffer Size
@@ -247,10 +239,6 @@ const long min_time_before_dir_change = 30; //milliseconds
 //but in this Software use Timer1 for the Stepperfunction so it is not possible to use the "analogWrite" function.
 //This Soft PWM use Timer 2 with 400 Hz to drive the PWM for the hotend
 #define PID_SOFT_PWM
-
-//Measure the MIN/MAX Value of the Hotend Temp and show it with
-//Command M601 / Command M602 Reset the MIN/MAX Value
-//#define DEBUG_HEATER_TEMP
 
 // M303 - PID relay autotune S<temperature> sets the target temperature. 
 // (default target temperature = 150C)
@@ -332,18 +320,5 @@ const long min_time_before_dir_change = 30; //milliseconds
 
 //#define CHAIN_OF_COMMAND 1 //Finish buffered moves before executing M42, fan speed, heater target, and so...
 
-//-----------------------------------------------------------------------
-// DEBUGING
-//-----------------------------------------------------------------------
-
-
-// Uncomment the following line to enable debugging. You can better control debugging below the following line
-//#define DEBUG
-#ifdef DEBUG
-  //#define DEBUG_PREPARE_MOVE //Enable this to debug prepare_move() function
-  //#define DEBUG_MOVE_TIME //Enable this to time each move and print the result   
-  //#define DEBUG_HEAT_MGMT //Enable this to debug heat management. WARNING, this will cause axes to jitter!
-  //#define DEBUG_DISABLE_CHECK_DURING_TRAVEL //Debug the namesake feature, see above in this file
-#endif
 
 #endif
