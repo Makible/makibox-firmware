@@ -1,23 +1,7 @@
 #ifndef CONFIGURATION_H
 #define CONFIGURATION_H
 
-// BASIC SETTINGS: select your board type, thermistor type, axis scaling, and endstop configuration
-
-//// The following define selects which electronics board you have. Please choose the one that matches your setup
-// MEGA/RAMPS up to 1.2  = 3,
-// RAMPS 1.3/1.4 = 33
-// Gen6 = 5, 
-// Gen6 deluxe = 51
-// Sanguinololu up to 1.1 = 6
-// Sanguinololu 1.2 and above = 62
-// Gen 7 @ 16MHZ only= 7
-// Gen 7 @ 20MHZ only= 71
-// Teensylu (at90usb) = 8
-// Printrboard Rev. B (ATMEGA90USB1286) = 9
-// Gen 3 Plus = 21
-// gen 3  Monolithic Electronics = 22
-// Gen3 PLUS for TechZone Gen3 Remix Motherboard = 23
-#define MOTHERBOARD 9
+// BASIC SETTINGS: select thermistor type, axis scaling, and endstop configuration
 
 //// Thermistor settings:
 // 1 is 100k thermistor
