@@ -23,7 +23,6 @@
 #include <inttypes.h>
 #include <stdio.h> // for size_t
 #include "WString.h"
-#include "Printable.h"
 
 #define DEC 10
 #define HEX 16
@@ -56,7 +55,6 @@ class Print
 	size_t print(unsigned long n, int base)		{ return printNumber(n, base, 0); }
 
 	size_t print(double n, int digits = 2)		{ return printFloat(n, digits); }
-	size_t print(const Printable &obj)		{ return obj.printTo(*this); }
 	size_t println(void);
 	size_t println(const String &s)			{ return print(s) + println(); }
 	size_t println(char c)				{ return print(c) + println(); }
@@ -75,7 +73,6 @@ class Print
 	size_t println(unsigned long n, int base)	{ return print(n, base) + println(); }
 
 	size_t println(double n, int digits = 2)	{ return print(n, digits) + println(); }
-	size_t println(const Printable &obj)		{ return obj.printTo(*this) + println(); }
 	int getWriteError() { return write_error; }
 	void clearWriteError() { setWriteError(0); }
   protected:

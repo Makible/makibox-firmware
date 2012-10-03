@@ -1,6 +1,12 @@
-#include "WProgram.h"
+#include "core_pins.h"
 
-//int main(void) __attribute__((noreturn));
+
+extern "C" {
+    void setup();
+    void loop();
+}
+
+
 int main(void)
 {
 	_init_Teensyduino_internal_();
@@ -11,4 +17,3 @@ int main(void)
 		loop();
 	}
 }
-

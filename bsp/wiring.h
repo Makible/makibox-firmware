@@ -27,7 +27,6 @@
 
 #include <avr/io.h>
 #include <stdlib.h>
-#include "binary.h"
 #include "core_pins.h"
 #ifdef ID
 #undef ID  // ID bit in USBSTA conflicts with user's code
