@@ -2466,12 +2466,24 @@ static volatile bool endstop_x_hit=false;
 static volatile bool endstop_y_hit=false;
 static volatile bool endstop_z_hit=false;
 
-static bool old_x_min_endstop=false;
-static bool old_x_max_endstop=false;
-static bool old_y_min_endstop=false;
-static bool old_y_max_endstop=false;
-static bool old_z_min_endstop=false;
-static bool old_z_max_endstop=false;
+#if X_MIN_PIN > -1
+  static bool old_x_min_endstop=false;
+#endif
+#if X_MAX_PIN > -1
+  static bool old_x_max_endstop=false;
+#endif
+#if Y_MIN_PIN > -1
+  static bool old_y_min_endstop=false;
+#endif
+#if Y_MAX_PIN > -1
+  static bool old_y_max_endstop=false;
+#endif
+#if Z_MIN_PIN > -1
+  static bool old_z_min_endstop=false;
+#endif
+#if Z_MAX_PIN > -1
+  static bool old_z_max_endstop=false;
+#endif
 
 
 
