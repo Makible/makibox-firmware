@@ -203,7 +203,6 @@ extern "C" {
 // M114 - Display current position
 
 //Custom M Codes
-// M42  - Set output on free pins, on a non pwm pin (over pin 13 on an arduino mega) use S255 to turn it on and S0 to turn it off. Use P to decide the pin (M42 P23 S255) would turn pin 23 on
 // M80  - Turn on Power Supply
 // M81  - Turn off Power Supply
 // M82  - Set E codes absolute (default)
@@ -982,34 +981,6 @@ void execute_command()
     
     switch( (int)code_value() ) 
     {
-      case 42: //M42 -Change pin status via gcode
-        if (code_seen('S'))
-        {
-#ifdef CHAIN_OF_COMMAND
-          st_synchronize(); // wait for all movements to finish
-#endif
-          int pin_status = code_value();
-          if (code_seen('P') && pin_status >= 0 && pin_status <= 255)
-          {
-            int pin_number = code_value();
-            for(unsigned int i = 0; i < sizeof(sensitive_pins) / sizeof(int); i++)
-            {
-              if (sensitive_pins[i] == pin_number)
-              {
-                pin_number = -1;
-                break;
-              }
-            }
-            
-            if (pin_number > -1)
-            {              
-              pinMode(pin_number, OUTPUT);
-              digitalWrite(pin_number, pin_status);
-              //analogWrite(pin_number, pin_status);
-            }
-          }
-        }
-        break;
       case 104: // M104
 #ifdef CHAIN_OF_COMMAND
           st_synchronize(); // wait for all movements to finish
