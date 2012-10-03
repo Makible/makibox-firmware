@@ -314,7 +314,8 @@ void PID_autotune(int PIDAT_test_temp)
   int PIDAT_input_help = 0;
   unsigned char PIDAT_count_input = 0;
 
-  float PIDAT_max, PIDAT_min;
+  float PIDAT_min = 0.0;
+  float PIDAT_max = 0.0;
  
   unsigned char PIDAT_PWM_val = HEATER_CURRENT;
   
@@ -328,8 +329,8 @@ void PID_autotune(int PIDAT_test_temp)
 
   unsigned char PIDAT_cycle_cnt = 0;
   
-  long PIDAT_t_high;
-  long PIDAT_t_low;
+  long PIDAT_t_high = 0;
+  long PIDAT_t_low = 0;
 
   long PIDAT_bias= HEATER_CURRENT/2;
   long PIDAT_d  =  HEATER_CURRENT/2;
@@ -369,6 +370,14 @@ void PID_autotune(int PIDAT_test_temp)
         PIDAT_input_help += analog2temp(current_raw);
         PIDAT_count_input++;
       #endif
+    }
+
+    // Initialize the min/max values to the first PIDAT_input value we get.
+    if (PIDAT_cycle_cnt == 1)
+    {
+        PIDAT_input = (float)PIDAT_input_help / (float)PIDAT_count_input;
+        PIDAT_min = PIDAT_input;
+        PIDAT_max = PIDAT_input;
     }
     
     if(PIDAT_cycle_cnt >= 10 )
