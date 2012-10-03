@@ -1,7 +1,9 @@
 /*
- Reprap firmware based on Sprinter
- Optimized for Sanguinololu 1.2 and above / RAMPS 
+ Makibox A6 firmware, based on Sprinter (master branch, 1 Sep 2012).
+ Designed for Printrboard (Rev B).
  
+ ---
+
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
  the Free Software Foundation, either version 3 of the License, or
@@ -13,137 +15,9 @@
  GNU General Public License for more details.
  
  You should have received a copy of the GNU General Public License
- along with this program.  If not, see <http://www.gnu.org/licenses/>. */
-
-/*
-  This firmware is a mashup between Sprinter, grbl and parts from marlin.
-  (https://github.com/kliment/Sprinter)
-  
-  Changes by Doppler Michael (midopple)
-  
-  Planner is from Simen Svale Skogsrud
-  https://github.com/simen/grbl
-
-  Parts of Marlin Firmware from ErikZalm
-  https://github.com/ErikZalm/Marlin-non-gen6
-  
-  Sprinter Changelog
-  -  Look forward function --> calculate 16 Steps forward, get from Firmaware Marlin and Grbl
-  -  Stepper control with Timer 1 (Interrupt)
-  -  Extruder heating with PID use a Softpwm (Timer 2) with 500 hz to free Timer1 for Steppercontrol
-  -  command M220 Sxxx --> tune Printing speed online (+/- 50 %)
-  -  G2 / G3 command --> circle function
-  -  Baudrate set to 250 kbaud
-  -  Testet on Sanguinololu Board
-  -  M30 Command can delete files on SD Card
-  -  move string to flash to free RAM vor forward planner
-  -  M203 Temperature monitor for Repetier
-
- Version 1.3.04T
-  - Implement Plannercode from Marlin V1 big thanks to Erik
-  - Stepper interrupt with Step loops
-  - Stepperfrequency 30 Khz
-  - New Command
-    * M202 - Set maximum feedrate that your machine can sustain (M203 X200 Y200 Z300 E10000) in mm/sec
-    * M204 - Set default acceleration: S normal moves T filament only moves (M204 S3000 T7000) im mm/sec^2 
-    * M205 - advanced settings:  minimum travel speed S=while printing T=travel only,  X= maximum xy jerk, Z=maximum Z jerk, E = max E jerk
-  - Remove unused Variables
-  - Check Uart Puffer while circle processing (CMD: G2 / G3)
-  - Fast Xfer Function --> move Text to Flash
-  - Option to deactivate ARC (G2/G3) function (save flash)
-  - Removed modulo (%) operator, which uses an expensive divide
-
- Version 1.3.05T
-  - changed homing function to not conflict with min_software_endstops/max_software_endstops (thanks rGlory)
-  - Changed check in arc_func
-  - Corrected distance calculation. (thanks jv4779)
-  - MAX Feed Rate for Z-Axis reduced to 2 mm/s some Printers had problems with 4 mm/s
-  
- Version 1.3.06T
- - the microcontroller can store settings in the EEPROM
- - M500 - stores paramters in EEPROM
- - M501 - reads parameters from EEPROM (if you need reset them after you changed them temporarily).
- - M502 - reverts to the default "factory settings". You still need to store them in EEPROM afterwards if you want to.
- - M503 - Print settings
- 
- Version 1.3.07T
- - Optimize Variable Size (faster Code)
- - Remove unused Code from Interrupt --> faster ~ 22 us per step
- - Replace abs with fabs --> Faster and smaler
- - Add "store_eeprom.cpp" to makefile
-
- Version 1.3.08T
- - If a line starts with ';', it is ignored but comment_mode is reset.
-   A ';' inside a line ignores just the portion following the ';' character.
-   The beginning of the line is still interpreted.
-   
- - Same fix for SD Card, tested and work
-
- Version 1.3.09T
- - Move SLOWDOWN Function up
- 
- Version 1.3.10T
-- Add info to GEN7 Pins
-- Update pins.h for gen7, working setup for 20MHz
-- calculate feedrate without extrude before planner block is set
-- New Board --> GEN7 @ 20 Mhz …
-- ENDSTOPS_ONLY_FOR_HOMING Option ignore Endstop always --> fault is cleared
-
- Version 1.3.11T
-- fix for broken include in store_eeprom.cpp  --> Thanks to kmeehl (issue #145)
-- Make fastio & Arduino pin numbering consistent for AT90USB128x. --> Thanks to lincomatic
-- Select Speedtable with F_CPU
-- Use same Values for Speedtables as Marlin 
-
- Version 1.3.12T
-- Fixed arc offset.
-
- Version 1.3.13T
-- Extrudemultiply with code M221 Sxxx (S100 original Extrude value)
-- use Feedratefactor only when Extrude > 0
-- M106 / M107 can drive the FAN with PWM + Port check for not using Timer 1
-- Added M93 command. Sends current steps for all axis.
-- New Option --> FAN_SOFT_PWM, with this option the FAN PWM can use every digital I/O
-
- Version 1.3.14T
-- When endstop is hit count the virtual steps, so the print lose no position when endstop is hit
-
- Version 1.3.15T
-- M206 - set additional homing offset 
-- Option for minimum FAN start speed --> #define MINIMUM_FAN_START_SPEED  50  (set it to zero to deactivate)
-  
- Version 1.3.16T
-- Extra Max Feedrate for Retract (MAX_RETRACT_FEEDRATE)
-
- Version 1.3.17T
-- M303 - PID relay autotune possible
-- G4 Wait until last move is done
-
- Version 1.3.18T
-- Problem with Thermistor 3 table when sensor is broken and temp is -20 °C
-
- Version 1.3.19T
-- Set maximum acceleration. If "steps per unit" is Change the acc were not recalculated
-- Extra Parameter for Max Extruder Jerk
-- New Parameter (max_e_jerk) in EEPROM --> Default settings after update !
-
- Version 1.3.20T
-- fix a few typos and correct english usage
-- reimplement homing routine as an inline function
-- refactor eeprom routines to make it possible to modify the value of a single parameter
-- calculate eeprom parameter addresses based on previous param address plus sizeof(type)
-- add 0 C point in Thermistortable 7
-
- Version 1.3.21T
-- M301 set PID Parameter, and Store to EEPROM
-- If no PID is used, deaktivate Variables for PID settings
-
- Version 1.3.22T
-- Error in JERK calculation after G92 command is send, make problems 
-  with Z-Lift function in Slic3r
-- Add homing values can shown with M206 D
-
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+
 
 #include <avr/interrupt.h>
 #include <bsp/pgmspace.h>
