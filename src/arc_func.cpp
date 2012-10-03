@@ -22,7 +22,7 @@
 #include <bsp/pgmspace.h>
 #include <math.h>
 
-#include "Configuration.h"
+#include "config.h"
 #include "makibox.h"
 
 #ifdef USE_ARC_FUNCTION

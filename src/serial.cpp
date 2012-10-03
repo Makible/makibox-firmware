@@ -4,7 +4,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#include "Configuration.h"
+#include "config.h"
 #include <bsp/usb_api.h>
 
 

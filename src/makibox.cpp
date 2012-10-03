@@ -153,8 +153,8 @@
 #include <string.h>
 #include <util/crc16.h>
 
+#include "config.h"
 #include "fastio.h"
-#include "Configuration.h"
 #include "pins.h"
 #include "makibox.h"
 #include "speed_lookuptable.h"

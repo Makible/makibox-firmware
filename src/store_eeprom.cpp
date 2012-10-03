@@ -21,7 +21,7 @@
 
 #include "makibox.h"
 #include "store_eeprom.h"
-#include "Configuration.h"
+#include "config.h"
 #include "serial.h"
 
 #ifdef PIDTEMP

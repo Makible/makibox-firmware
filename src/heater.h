@@ -21,7 +21,7 @@
 */
 
 
-#include "Configuration.h"
+#include "config.h"
 #include "thermistortables.h"
 
 #if defined HEATER_USES_THERMISTOR
