@@ -18,6 +18,7 @@
 #include <avr/eeprom.h>
 #include <bsp/pgmspace.h>
 #include <inttypes.h>
+#include <string.h>
 
 #include "makibox.h"
 #include "store_eeprom.h"
@@ -35,7 +36,7 @@
 //========================= Read / Write EEPROM =======================================
 template <class T> int EEPROM_write_setting(int address, const T& value)
 {
-  const byte* p = (const byte*)(const void*)&value;
+  const unsigned char *p = (const unsigned char *)(const void*)&value;
   int i;
   for (i = 0; i < (int)sizeof(value); i++)
     eeprom_write_byte((unsigned char *)address++, *p++);
@@ -44,7 +45,7 @@ template <class T> int EEPROM_write_setting(int address, const T& value)
 
 template <class T> int EEPROM_read_setting(int address, T& value)
 {
-  byte* p = (byte*)(void*)&value;
+  unsigned char *p = (unsigned char *)(void*)&value;
   int i;
   for (i = 0; i < (int)sizeof(value); i++)
     *p++ = eeprom_read_byte((unsigned char *)address++);
@@ -90,7 +91,7 @@ void EEPROM_StoreSettings()
 
 void EEPROM_printSettings()
 {  
-  #ifdef PRINT_EEPROM_SETTING
+  #ifdef PRINT_EEPROM_SETTINGS
       serial_send("Steps per unit:\r\n  M92 X%f Y%f Z%f E%f\r\n",
         axis_steps_per_unit[0],
         axis_steps_per_unit[1],
@@ -105,18 +106,18 @@ void EEPROM_printSettings()
         max_feedrate[3]
       );
 
-      serial_send("Maximum Acceleration (mm/s2):\r\n  M201 X%f Y%f Z%f E%f\r\n",
+      serial_send("Maximum Acceleration (mm/s2):\r\n  M201 X%ld Y%ld Z%ld E%ld\r\n",
         max_acceleration_units_per_sq_second[0],
         max_acceleration_units_per_sq_second[1],
         max_acceleration_units_per_sq_second[2],
         max_acceleration_units_per_sq_second[3]
       );
 
-      serial_send("Acceleration: S=acceleration, T=retract acceleration\r\n")
-      serial_send("  M204 S%d T%d\r\n", move_acceleration, retract_acceleration);
+      serial_send("Acceleration: S=acceleration, T=retract acceleration\r\n");
+      serial_send("  M204 S%f T%f\r\n", move_acceleration, retract_acceleration);
 
       serial_send("Advanced variables (mm/s): S=Min feedrate, T=Min travel feedrate, X=max xY jerk,  Z=max Z jerk, E=max E jerk\r\n");
-      serial_send("  M205 S%d T%d X%d Z%d E%d\r\n",
+      serial_send("  M205 S%f T%f X%f Z%f E%f\r\n",
         minimumfeedrate,
         mintravelfeedrate,
         max_xy_jerk,
@@ -127,6 +128,8 @@ void EEPROM_printSettings()
     #ifdef PIDTEMP
       serial_send("PID settings:\r\n  M301 P%d I%d D%d\r\n", PID_Kp, PID_Ki, PID_Kd); 
     #endif
+  #else
+    serial_send("(printing of EEPROM settings disabled)\r\n");
   #endif
 
 } 
@@ -135,7 +138,6 @@ void EEPROM_printSettings()
 void EEPROM_RetrieveSettings(bool def, bool printout)
 {  // if def=true, the default values will be used
 
-    int i=EEPROM_OFFSET;
     char stored_ver[4];
     char ver[4]=EEPROM_VERSION;
     

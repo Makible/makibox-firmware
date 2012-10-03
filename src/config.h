@@ -47,11 +47,8 @@ const bool Z_ENDSTOP_INVERT = false;
 // M502 - reverts to the default "factory settings". You still need to store them in EEPROM afterwards if you want to.
 // M503 - Print settings
 // define this to enable eeprom support
-//#define USE_EEPROM_SETTINGS
-
-// to disable EEPROM Serial responses and decrease program space by ~1000 byte: comment this out:
-// please keep turned on if you can.
-//#define PRINT_EEPROM_SETTING
+#define USE_EEPROM_SETTINGS
+#define PRINT_EEPROM_SETTINGS
 
 //-----------------------------------------------------------------------
 //// ARC Function (G2/G3 Command)
