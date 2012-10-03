@@ -489,15 +489,6 @@ ISR(USB_COM_vect)
 			}
 			usb_ack_out();
 			usb_send_in();
-			if (*(long *)cdc_line_coding == 134L) reboot_timer = 15;
-			if (*(long *)cdc_line_coding == 150L) {
-				UENUM = CDC_TX_ENDPOINT;
-				while (UESTA0X & 0x03) {
-					UEINTX = 0xFF;
-					while (UEINTX & 0x04) /* TODO: timeout? */ ;
-				}
-				_restart_Teensyduino_();
-			}
 			return;
 		}
 		if (bRequest == CDC_SET_CONTROL_LINE_STATE /* 0x22 */ && bmRequestType == 0x21) {
