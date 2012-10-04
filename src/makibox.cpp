@@ -604,12 +604,10 @@ void cmdbuf_read_serial()
 //  command checksum, ensuring that the sequence
 //  number is correct, and dispatching the command.
 //
-//  If validation failes, an "rs <seqnbr>" response
-//  is sent;  after command dispatch, an "ok" or
-//  "!!" response is sent.
+//  The protocol is quite strict:
 //
-//  TODO:  reject (rather than ignore) parameters
-//  which are not valid for a particular command.
+//      N<seqnbr> G<code> [params...] *0000
+//      N<seqnbr> M<code> [params...] *0000
 //
 //  TODO:  once there is a validation error (resp
 //  "!!") refuse to accept additional commands until
@@ -617,11 +615,18 @@ void cmdbuf_read_serial()
 //------------------------------------------------
 void cmdbuf_process() 
 { 
+  char *curcmd_lineno;
+  char *curcmd_checksum;
+  char *curcmd_gcode;
+  char *curcmd_mcode;
+  uint16_t crc;
+  long seqnbr;
+
+  // Get current command, and set the bufindr pointer to the next cmdbuf slot.
   if (buflen < 1)
   {
     return;
   }
-  
   curcmd = cmdbuf[bufindr];
   buflen--;
   bufindr++;
@@ -630,44 +635,57 @@ void cmdbuf_process()
     bufindr = 0;
   }
 
-  if (!strchr(curcmd, 'N'))
-  {
-    serial_send("!! Invalid command - no line number.\r\n");
-    return;
-  }
-  if (!strchr(curcmd, '*'))
+  // Validate the command's checksum.
+  curcmd_checksum = strrchr(curcmd, '*');
+  crc = 0;
+  if (!curcmd_checksum)
   {
     serial_send("!! Invalid command - no checksum.\r\n");
     return;
   }
-
-  // Validate the command's checksum.
-  uint16_t checksum = 0;
-  int i = 0;
-  while (curcmd[i] != '*')
+  for (int i = 0; curcmd[i] != '*' && i < MAX_CMD_SIZE; i++)
   {
-    _crc_xmodem_update(checksum, curcmd[i++]);
+    _crc_xmodem_update(crc, curcmd[i++]);
   }
-  if (checksum != strtoul(strchr(curcmd, '*'), NULL, 16))
+  if (crc != strtoul(curcmd_checksum + 1, NULL, 16))
   {
     serial_send("!! Invalid command - bad checksum.\r\n");
     return;
   }
 
   // Validate the command's sequence number.
-  long seqnbr = strtol(strchr(curcmd, 'N') + 1, NULL, 10);
-  if (seqnbr > 0 && seqnbr != cmdseqnbr + 1)
+  // TODO:  provide a way to reset the sequence number?
+  curcmd_lineno = strchr(curcmd, 'N');
+  if (!curcmd_lineno)
   {
-    serial_send("rs %ld\r\n", seqnbr);
+    serial_send("!! Invalid command - no line number.\r\n");
     return;
   }
-  cmdseqnbr++;
+  seqnbr = strtoul(curcmd_lineno + 1, NULL, 10);
+  if (seqnbr != cmdseqnbr + 1)
+  {
+    serial_send("rs %ld\r\n", cmdseqnbr + 1);
+    return;
+  }
+  cmdseqnbr = seqnbr;
+
+  // Validate that the command has a single G or M code.
+  curcmd_gcode = strchr(curcmd, 'G');
+  curcmd_mcode = strchr(curcmd, 'M');
+  if (curcmd_gcode && curcmd_mcode)
+  {
+    serial_send("!! cannot have both G and M code\r\n");
+    return;
+  }
+  if (!curcmd_gcode && !curcmd_mcode)
+  {
+    serial_send("!! command did not have G or M code\r\n");
+    return;
+  }
 
   // Dispatch command.
-  serial_send("// dispatching command\r\n");
+  serial_send("go %ld\r\n", cmdseqnbr);
   execute_command();
-
-  // Success!
   previous_millis_cmd = millis();
   serial_send("ok %ld\r\n", cmdseqnbr);
 }
