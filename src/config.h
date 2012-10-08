@@ -33,11 +33,6 @@ const bool X_ENDSTOP_INVERT = false;
 const bool Y_ENDSTOP_INVERT = false;
 const bool Z_ENDSTOP_INVERT = false;
 
-// This determines the communication speed of the printer
-#define BAUDRATE 115200
-//#define BAUDRATE 250000
-
-
 //-----------------------------------------------------------------------
 //// STORE SETTINGS TO EEPROM
 //-----------------------------------------------------------------------

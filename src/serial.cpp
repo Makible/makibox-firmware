@@ -4,8 +4,14 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#include "config.h"
 #include <bsp/usb_api.h>
+
+
+/* This is a mostly-useless definition, since we're using USB serial... */
+#define BAUDRATE 57600
+
+
+extern "C" {
 
 
 void serial_init()
@@ -14,13 +20,13 @@ void serial_init()
 }
 
 
-bool serial_can_read()
+int serial_can_read()
 {
     return Serial.available() > 0;
 }
 
 
-char serial_read()
+uint8_t serial_read()
 {
     int ch = Serial.read();
     if (ch < 0 || ch > 255)
@@ -28,7 +34,7 @@ char serial_read()
         // TODO:  error handling, somehow?
         return 0;
     }
-    return (char)ch;
+    return (uint8_t)ch;
 }
 
 
@@ -64,3 +70,6 @@ void __serial_printf_P(PGM_P fmt, ...)
         Serial.write((uint8_t *)buf, size);
     }
 }
+
+
+}  // extern "C"

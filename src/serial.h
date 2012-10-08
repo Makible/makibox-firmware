@@ -1,7 +1,13 @@
 
+#include <bsp/pgmspace.h>
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 void serial_init();
-bool serial_can_read();
+int serial_can_read();
 char serial_read();
 
 
@@ -38,3 +44,7 @@ void __serial_printf_P(PGM_P fmt, ...);
         __dummy_printf((fmt), ##args);                  \
         __serial_printf_P(__c, ##args);         \
     } while(0)
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif
